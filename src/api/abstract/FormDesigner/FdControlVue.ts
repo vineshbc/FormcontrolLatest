@@ -7,8 +7,13 @@ import {
 import { PropType } from 'vue'
 import { Component, Emit, Prop, PropSync, Vue, Watch, Ref } from 'vue-property-decorator'
 import { EventBus } from '@/FormDesigner/event-bus'
+import FDEditableText from '@/FormDesigner/components/atoms/FDEditableText/index.vue'
+
 @Component({
-  name: 'FdControlVue'
+  name: 'FdControlVue',
+  components: {
+    FDEditableText
+  }
 })
 export default class FdControlVue extends Vue {
   @Prop({ required: true, type: Boolean }) public isRunMode!: boolean
@@ -45,7 +50,9 @@ export default class FdControlVue extends Vue {
   imageProperty={
     height: 'fit-content'
   }
-  imagePos:any ={}
+  imagePos={
+    alignSelf:''
+  }
    // global variable to keep track of TripleState when enabled
    protected tripleState:number = 0
 
@@ -67,6 +74,7 @@ export default class FdControlVue extends Vue {
   protected imageRef: HTMLImageElement
   protected logoRef: HTMLSpanElement
   protected componentRef : HTMLSpanElement
+  protected editableTextRef: FDEditableText
   preventClickOnce: boolean = false
   addEventCustomCallback (e: CustomMouseEvent) {
     this.controlEditMode(e)
@@ -1464,8 +1472,8 @@ pictureSize () {
   if (this.properties.Picture) {
     Vue.nextTick(() => {
       // const imgProp = document.getElementById('img')
-        imgStyle.width = this.properties.Width! <= this.imageRef!.clientWidth ? `${this.properties.Width}px` : 'fit-content'
-        imgStyle.height = this.properties.Height! <= this.imageRef!.clientHeight ? `${this.properties.Height}px` : 'fit-content'    
+        imgStyle.width = this.properties.Width! <= this.imageRef!.naturalWidth ? `${this.properties.Width}px` : 'fit-content'
+        imgStyle.height = this.properties.Height! <= this.imageRef!.naturalHeight ? `${this.properties.Height}px` : 'fit-content'    
         if(this.properties.PicturePosition === 9 || this.properties.PicturePosition === 10 || this.properties.PicturePosition === 11 ){
           this.imageRef.scrollIntoView(true)          
         }
@@ -1513,20 +1521,35 @@ labelAlignment(){
         this.reverseStyle.alignSelf = 'inherit'
       }
   else {
-    let logoProp = this.logoRef ? this.logoRef : this.logoRef.$el
+    let logoProp = this.logoRef 
       if (this.properties.Width! >= logoProp!.clientWidth && this.properties.Height! >= logoProp!.clientHeight) {
         this.reverseStyle.alignSelf = 'center'
       }
     }
 }
 getWidthHeight(){
-  let picPosLeftRight=[0,1,2,3,4,5]
-  let picPosTopBottom = [6,7,8,9,10,11]
+  const picPosLeftRight=[0,1,2,3,4,5]
+  const picPosTopBottom = [6,7,8,9,10,11]
   const imgHeight = this.imageRef && this.imageRef.naturalHeight
   const imgWidth = this.imageRef && this.imageRef.naturalWidth
-  const labelHeight = this.textSpanRef && this.textSpanRef.offsetHeight? this.textSpanRef.offsetHeight : this.textSpanRef.$el.offsetHeight
-  const labelWidth = this.textSpanRef && this.textSpanRef.offsetWidth ? this.textSpanRef.offsetWidth : this.textSpanRef.$el.offsetWidth
-  let componentRef = this.componentRef ? this.componentRef : this.componentRef.$el
+  let labelHeight = 0
+  let labelWidth = 0
+  //calcluate text height
+  if(this.textSpanRef && this.textSpanRef.offsetHeight){
+    labelHeight = this.textSpanRef.offsetHeight
+  }
+  else if((this.editableTextRef.$el as HTMLSpanElement ) && (this.editableTextRef.$el as HTMLSpanElement ).offsetHeight){
+    labelHeight = (this.editableTextRef.$el as HTMLSpanElement ).offsetHeight
+  }
+  //calcuate text width
+  if(this.textSpanRef && this.textSpanRef.offsetWidth){
+    labelWidth = this.textSpanRef.offsetWidth
+  }
+  else if((this.editableTextRef.$el as HTMLSpanElement ) && (this.editableTextRef.$el as HTMLSpanElement ).offsetWidth) {
+    labelWidth = (this.editableTextRef.$el as HTMLSpanElement ).offsetWidth 
+  }
+
+  let componentRef = this.componentRef
   let widthHeightData = {
     width: labelWidth + 15,
     height: labelHeight + 10
@@ -1553,7 +1576,7 @@ getWidthHeight(){
        widthHeightData.height = imgHeight >= labelHeight ? imgHeight : labelHeight
      }
    }
-  widthHeightData.width = (widthHeightData.width + 20) <  componentRef!.clientWidth ? widthHeightData.width : componentRef!.clientWidth
+  widthHeightData.width = (((widthHeightData.width + 20) <  componentRef!.clientWidth) || (imgWidth > componentRef!.clientWidth )) ? widthHeightData.width : componentRef!.clientWidth
   return widthHeightData
 }
 }

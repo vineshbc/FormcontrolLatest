@@ -44,7 +44,7 @@
           :editable="isRunMode === false && syncIsEditMode"
           :style="[labelStyle, {color: !properties.Enabled ? 'gray' : ''}]"
           :caption="properties.Caption"
-          ref="textSpanRef"
+          ref="editableTextRef"
           @updateCaption="updateCaption"
           @releaseEditMode="releaseEditMode"
         >
@@ -71,6 +71,7 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
   @Ref('textSpanRef') textSpanRef!: HTMLSpanElement;
   @Ref('imageRef') imageRef: HTMLImageElement
   @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('editableTextRef') editableTextRef!: FDEditableText
   $el: HTMLDivElement
   alignItem: boolean = false
   get logoStyleObj (): Partial<CSSStyleDeclaration> {
@@ -189,6 +190,9 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
       this.$nextTick(() => {
         this.onPictureLoad()
         this.positionLogo(this.properties.PicturePosition)
+        if (this.properties.AutoSize) {
+          this.updateAutoSize()
+        }
       })
     }
   }
@@ -211,6 +215,21 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
   updatePicturePosition () {
     if (this.properties.Picture) {
       this.positionLogo(this.properties.PicturePosition)
+      if (this.properties.AutoSize) {
+        this.updateAutoSize()
+      }
+    }
+  }
+  @Watch('properties.TextAlign')
+  autoSizeOnTextAlignment () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.BorderStyle')
+  autoSizeOnBorderStyleChange () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
     }
   }
 
@@ -400,7 +419,7 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
   editableTextVerify () {
     if (this.isEditMode) {
       Vue.nextTick(() => {
-        if (this.isEditMode && this.textSpanRef.$el.clientHeight > this.properties.Height!) {
+        if (this.isEditMode && this.editableTextRef.$el.clientHeight > this.properties.Height!) {
           this.alignItem = true
         } else {
           this.alignItem = false
@@ -437,7 +456,7 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
       event.stopPropagation()
       this.selectedItem(event)
       if (this.isEditMode) {
-        (this.textSpanRef.$el as HTMLSpanElement).focus()
+        (this.editableTextRef.$el as HTMLSpanElement).focus()
       }
     }
   }

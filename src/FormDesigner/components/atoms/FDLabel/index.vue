@@ -23,7 +23,7 @@
     <FDEditableText
       v-else
       id="label"
-      ref="textSpanRef"
+      ref="editableTextRef"
       :editable="isRunMode === false && syncIsEditMode"
       :style="labelStyle"
       :caption="properties.Caption"
@@ -52,6 +52,7 @@ export default class FDLabel extends Mixins(FdControlVue) {
   @Ref('textSpanRef') textSpanRef!: HTMLSpanElement
   @Ref('imageRef') imageRef: HTMLImageElement
   @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description style object is passed to :style attribute in label tag
    * dynamically changing the styles of the component based on propControlData
@@ -172,6 +173,9 @@ export default class FDLabel extends Mixins(FdControlVue) {
       this.$nextTick(() => {
         this.onPictureLoad()
         this.positionLogo(this.properties.PicturePosition)
+        if (this.properties.AutoSize) {
+          this.updateAutoSize()
+        }
       })
     }
   }
@@ -194,9 +198,23 @@ export default class FDLabel extends Mixins(FdControlVue) {
   updatePicturePosition () {
     if (this.properties.Picture) {
       this.positionLogo(this.properties.PicturePosition)
+      if (this.properties.AutoSize) {
+        this.updateAutoSize()
+      }
     }
   }
-
+  @Watch('properties.TextAlign')
+  autoSizeOnTextAlignment () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.BorderStyle')
+  autoSizeOnBorderStyleChange () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
   /**
    * @description updateAutoSize calls Vuex Actions to update object
    * @function updateAutoSize
@@ -240,7 +258,7 @@ export default class FDLabel extends Mixins(FdControlVue) {
       event.stopPropagation()
       this.selectedItem(event)
       if (this.isEditMode) {
-        (this.textSpanRef.$el as HTMLSpanElement).focus()
+        (this.editableTextRef.$el as HTMLSpanElement).focus()
       }
     }
   }

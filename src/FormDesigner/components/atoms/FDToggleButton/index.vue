@@ -31,7 +31,7 @@
       v-else
       :editable="isRunMode === false && syncIsEditMode"
       :style="labelStyle"
-      ref="textSpanRef"
+      ref="editableTextRef"
       :caption="properties.Caption"
       @updateCaption="updateCaption"
       @releaseEditMode="releaseEditMode"
@@ -63,6 +63,7 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
   @Ref('textSpanRef') textSpanRef!: HTMLSpanElement
   @Ref('imageRef') imageRef: HTMLImageElement
   @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description getDisableValue checks for the RunMode of the control and then returns after checking for the Enabled
    * and the Locked property
@@ -111,7 +112,7 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
       }
       this.selectedItem(e)
       if (this.isEditMode) {
-        (this.textSpanRef.$el as HTMLSpanElement).focus()
+        (this.editableTextRef.$el as HTMLSpanElement).focus()
       }
     }
   }
@@ -258,6 +259,9 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
       this.$nextTick(() => {
         this.onPictureLoad()
         this.positionLogo(this.properties.PicturePosition)
+        if (this.properties.AutoSize) {
+          this.updateAutoSize()
+        }
       })
     }
   }
@@ -280,6 +284,21 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
   updatePicturePosition () {
     if (this.properties.Picture) {
       this.positionLogo(this.properties.PicturePosition)
+      if (this.properties.AutoSize) {
+        this.updateAutoSize()
+      }
+    }
+  }
+  @Watch('properties.TextAlign')
+  autoSizeOnTextAlignment () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.BorderStyle')
+  autoSizeOnBorderStyleChange () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
     }
   }
 
