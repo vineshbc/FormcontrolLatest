@@ -282,7 +282,6 @@ export default class Container extends FDCommonMethod {
           EventBus.$emit(
             'getGroupMoveValue',
             (offsetX: number, offsetY: number, id: string, tempEventObj: MouseEvent) => {
-              console.log(tempEventObj)
               moveValueX = offsetX
               moveValueY = offsetY
               tempEvent = Object.keys(tempEventObj).length === 0 ? tempEvent : tempEventObj
@@ -465,8 +464,6 @@ export default class Container extends FDCommonMethod {
   }
 
   get getDragSelector () {
-    console.log('this.isEditMode', this.isEditMode)
-    console.log('sleected ', this.selectedControls[this.userFormId].selected.length)
     if (this.isEditMode === false && this.selectedControls[this.userFormId].selected.length > 1) {
       return 'dragSelector'
     } else {

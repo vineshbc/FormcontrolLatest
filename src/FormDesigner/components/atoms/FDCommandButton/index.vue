@@ -1,5 +1,5 @@
 <template>
-<div ref="componentRef">
+<div ref="componentRef" :tabindex="properties.TabIndex">
   <button
     class="commandbutton"
     :style="styleObj"
@@ -54,13 +54,13 @@ import Vue from 'vue'
   }
 })
 export default class FDCommandButton extends Mixins(FdControlVue) {
-  $el!: HTMLButtonElement;
+  $el!: HTMLDivElement;
   isClicked: boolean = false;
   isContentEditable: boolean = false;
-  @Ref('textSpanRef') textSpanRef!: HTMLSpanElement
+  @Ref('textSpanRef') textSpanRef!: HTMLDivElement
   @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLSpanElement
-  @Ref('componentRef') componentRef: HTMLSpanElement
+  @Ref('logoRef') logoRef : HTMLDivElement
+  @Ref('componentRef') componentRef: HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description getDisableValue checks for the RunMode of the control and then returns after checking for the Enabled
@@ -209,6 +209,11 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
 
   @Watch('properties.Caption', { deep: true })
   autoSizeValidateOnCaptionChange () {
+    if (this.properties.Picture) {
+      Vue.nextTick(() => {
+        this.labelAlignment()
+      })
+    }
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
@@ -278,13 +283,14 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
         this.positionLogo(this.properties.PicturePosition)
       }
       this.$nextTick(() => {
+        const { width, height } = this.getWidthHeight()
         this.updateDataModel({
           propertyName: 'Height',
-          value: this.getWidthHeight().height + 5
+          value: height + 5
         })
         this.updateDataModel({
           propertyName: 'Width',
-          value: this.getWidthHeight().width
+          value: width
         })
       })
     } else {

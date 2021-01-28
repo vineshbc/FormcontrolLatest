@@ -15,10 +15,10 @@
         @mousedown.stop="handleMouseDown($event, handlerName, controlType)"
       ></div>
     </div>
-    <div v-show="isMove" class="m-top-b move-border" :style="getLTStyle"/>
+    <div v-show="isMove" class="m-top-b move-border" :style="getTStyle" />
     <div v-show="isMove" class="m-right-b move-border" :style="getRStyle"/>
     <div v-show="isMove" class="m-bottom-b move-border" :style="getBStyle"/>
-    <div v-show="isMove" class="m-left-b move-border" :style="getLTStyle"/>
+    <div v-show="isMove" class="m-left-b move-border" :style="getLStyle"/>
   </div>
 </template>
 
@@ -39,7 +39,7 @@ export default class Resizehandler extends FDCommonMethod {
   @Prop({ required: true, type: String }) public controlId!: string;
   @Prop({ required: true, type: String }) public userFormId: string;
   @Prop({ required: true, type: String }) public controlType: string;
-  @Prop() public size: {width: number, height: number}
+  @Prop() public size: {width: number, height: number, left: number, top: number}
 
   positions: IMousePosition = {
     clientX: 0,
@@ -50,6 +50,14 @@ export default class Resizehandler extends FDCommonMethod {
     offsetY: 0
   };
   resizeDiv: string = '';
+  handlerPosition: IMouseHandler = {
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    movementX: 0,
+    movementY: 0
+  }
 
   handlers: Array<String> = ['tl', 'tm', 'tr', 'mr', 'br', 'bm', 'bl', 'ml'];
 
@@ -62,6 +70,10 @@ export default class Resizehandler extends FDCommonMethod {
   @Emit('muldragControl')
   private muldragControl (event: MouseEvent, handler: string) {
     return { event: event, handler: handler }
+  }
+  @Emit('updateModel')
+  updateDataModel (updateData: IupdateDataModel) {
+    return updateData
   }
 
   @Emit('updateUserFormResize')
@@ -86,12 +98,14 @@ export default class Resizehandler extends FDCommonMethod {
     EventBus.$on('getMoveValue', this.getMoveValue)
     EventBus.$on('startMoveControl', this.startMoveControl)
     EventBus.$on('moveControl', this.moveControl)
+    EventBus.$on('elementDrag', this.elementDrag)
     EventBus.$on('endMoveControl', this.endMoveControl)
   }
   destroyed () {
     EventBus.$off('getMoveValue', this.getMoveValue)
     EventBus.$off('startMoveControl', this.startMoveControl)
     EventBus.$off('moveControl', this.moveControl)
+    EventBus.$off('elementDrag', this.elementDrag)
     EventBus.$off('endMoveControl', this.endMoveControl)
   }
   getMoveValue (callBack: Function) {
@@ -103,11 +117,16 @@ export default class Resizehandler extends FDCommonMethod {
       }
     }
   }
-  startMoveControl (event: MouseEvent) {
+  startMoveControl (event: MouseEvent, handler: string) {
     EventBus.$emit('handleName', 'notDrag')
     if (this.getIsMoveTarget) {
+      this.resizeDiv = handler
+      this.handlerPosition.left = 0
+      this.handlerPosition.top = 0
       this.positions.clientX = event.clientX
       this.positions.clientY = event.clientY
+      this.handlerPosition.width = this.size.width
+      this.handlerPosition.height = this.size.height
     }
   }
 
@@ -128,6 +147,7 @@ export default class Resizehandler extends FDCommonMethod {
         }
       }
     }
+    console.trace()
   }
   endMoveControl () {
     if (this.getIsMoveTarget) {
@@ -157,12 +177,18 @@ export default class Resizehandler extends FDCommonMethod {
       if (controlType === 'control') {
         const containerType = this.userformData[this.userFormId][this.controlId].type
         if (handler !== 'drag') {
-          document.onmousemove = this.elementDrag
+          // this.handlerPosition.left = 0
+          // this.handlerPosition.top = 0
+          this.isMainSelect = true
+          EventBus.$emit('startMoveControl', event, handler)
+          document.onmousemove = (event: MouseEvent) => {
+            EventBus.$emit('elementDrag', event)
+          }
         } else {
           this.positions.offsetX = event.offsetX
           this.positions.offsetY = event.offsetY
           this.isMainSelect = true
-          EventBus.$emit('startMoveControl', event)
+          EventBus.$emit('startMoveControl', event, handler)
           if (containerType === 'Frame' || containerType === 'MultiPage') {
             document.onmousemove = (event: MouseEvent) => { this.moveControl(event, containerType) }
           } else {
@@ -183,23 +209,61 @@ export default class Resizehandler extends FDCommonMethod {
     this.positions.movementX = this.positions.clientX - event.clientX
     this.positions.movementY = this.positions.clientY - event.clientY
   }
-  get getLTStyle () {
-    return {
-      left: `${-this.positions.movementX}px`,
-      top: `${-this.positions.movementY}px`
+  get getLStyle () {
+    if (this.resizeDiv === 'drag') {
+      return {
+        left: `${-this.positions.movementX}px`,
+        top: `${-this.positions.movementY}px`
+      }
+    } else {
+      return {
+        left: `${-this.handlerPosition.left}px !important`,
+        top: `${-this.handlerPosition.top}px !important`,
+        height: `${this.handlerPosition.height}px !important`
+      }
+    }
+  }
+  get getTStyle () {
+    if (this.resizeDiv === 'drag') {
+      return {
+        left: `${-this.positions.movementX}px`,
+        top: `${-this.positions.movementY}px`
+      }
+    } else {
+      return {
+        left: `${-this.handlerPosition.left}px`,
+        top: `${-this.handlerPosition.top}px`,
+        width: `${this.handlerPosition.width}px !important`
+      }
     }
   }
   get getRStyle () {
-    return this.size ? {
-      left: `${this.size.width - this.positions.movementX}px`,
-      top: `${-this.positions.movementY}px`
-    } : null
+    if (this.resizeDiv === 'drag') {
+      return this.size ? {
+        left: `${this.size.width - this.positions.movementX}px`,
+        top: `${-this.positions.movementY}px`
+      } : null
+    } else {
+      return this.size ? {
+        left: `${this.handlerPosition.width - this.handlerPosition.left}px`,
+        height: `${this.handlerPosition.height}px !important`,
+        top: `${-this.handlerPosition.top}px !important`
+      } : null
+    }
   }
   get getBStyle () {
-    return this.size ? {
-      left: `${-this.positions.movementX}px`,
-      top: `${this.size.height - this.positions.movementY}px`
-    } : null
+    if (this.resizeDiv === 'drag') {
+      return this.size ? {
+        left: `${-this.positions.movementX}px`,
+        top: `${this.size.height - this.positions.movementY}px`
+      } : null
+    } else {
+      return this.size ? {
+        top: `${this.handlerPosition.height - this.handlerPosition.top}px`,
+        width: `${this.handlerPosition.width}px !important`,
+        left: `${-this.handlerPosition.left}px`
+      } : null
+    }
   }
   /**
    * @description Implementation  of Logic for  resizing the userform
@@ -243,16 +307,74 @@ export default class Resizehandler extends FDCommonMethod {
       Math.round(this.positions.movementX / scale / grid[0]) * grid[0]
     const y: number =
       Math.round(this.positions.movementY / scale / grid[1]) * grid[1]
+    this.handlerPosition.movementX = x
+    this.handlerPosition.movementY = y
 
-    const diffGridX: number = x - this.positions.movementX
-    const diffGridY: number = y - this.positions.movementY
+    // const diffGridX: number = x - this.positions.movementX
+    // const diffGridY: number = y - this.positions.movementY
 
-    this.positions.clientX = event.clientX - diffGridX
-    this.positions.clientY = event.clientY - diffGridY
+    // this.positions.clientX = event.clientX - diffGridX
+    // this.positions.clientY = event.clientY - diffGridY
     if (this.currentMouseDownEvent && (x !== 0 || y !== 0)) {
       this.currentMouseDownEvent.customCallBack && this.currentMouseDownEvent.customCallBack()
     }
-    this.updateResize({ x: x, y: y, handler: this.resizeDiv })
+    const selected = this.selectedControls[this.userFormId].selected
+    if (selected.length === 1 && selected[0] === this.controlId) {
+      const top = (this.size.height! + y) > 0 ? y : y - (this.size.height! + y)
+      const left = (this.size.width! + x) > 0 ? x : x - (this.size.width! + x)
+      let incWidth = (this.size.width! + x) > 0 ? (this.size.width! + x) : -(this.size.width! + x)
+      let incHeight = (this.size.height! + y) > 0 ? (this.size.height! + y) : -(this.size.height! + y)
+      let decWidth = (this.size.width! - x) > 0 ? (this.size.width! - x) : -(this.size.width! - x)
+      let decHeight = (this.size.height! - y) > 0 ? (this.size.height! - y) : -(this.size.height! - y)
+      if (this.resizeDiv.includes('t')) {
+        this.handlerPosition.top = top
+        this.handlerPosition.height = incHeight
+      } else if (this.resizeDiv.includes('b')) {
+        if ((this.size.height! - y) > 0) {
+          this.handlerPosition.height = decHeight
+        } else {
+          this.handlerPosition.top = decHeight
+          this.handlerPosition.height = decHeight
+        }
+      }
+      if (this.resizeDiv.includes('l')) {
+        this.handlerPosition.left = left
+        this.handlerPosition.width = incWidth
+      } else if (this.resizeDiv.includes('r')) {
+        if ((this.size.width! - x) > 0) {
+          this.handlerPosition.width = decWidth
+        } else {
+          this.handlerPosition.left = decWidth
+          this.handlerPosition.width = decWidth
+        }
+      }
+    } else {
+      const top = y
+      const left = x
+      let incWidth = (this.size.width! + x) > 0 ? (this.size.width! + x) : 0
+      let incHeight = (this.size.height! + y) > 0 ? (this.size.height! + y) : 0
+      let decWidth = (this.size.width! - x) > 0 ? (this.size.width! - x) : 0
+      let decHeight = (this.size.height! - y) > 0 ? (this.size.height! - y) : 0
+      if (this.resizeDiv.includes('t')) {
+        if (incHeight > 0) {
+          this.handlerPosition.top = top
+        }
+        this.handlerPosition.height = incHeight
+      } else if (this.resizeDiv.includes('b')) {
+        this.handlerPosition.height = decHeight
+      }
+      if (this.resizeDiv.includes('l')) {
+        if (incWidth > 0) {
+          this.handlerPosition.left = left
+        }
+        this.handlerPosition.width = incWidth
+      } else if (this.resizeDiv.includes('r')) {
+        this.handlerPosition.width = decWidth
+      }
+    }
+    if (this.getIsMoveTarget) {
+      this.isMove = true
+    }
   }
 
   /**
@@ -260,6 +382,17 @@ export default class Resizehandler extends FDCommonMethod {
    * @function closeDragElement
    */
   closeDragElement (): void {
+    const selected = this.selectedControls[this.userFormId].selected
+    if (this.resizeDiv !== 'drag' && this.controlType !== 'userform') {
+      if (selected.length === 1 && selected[0] === this.controlId) {
+        this.updateDataModel({ propertyName: 'Width', value: Math.abs(this.handlerPosition.width!) })
+        this.updateDataModel({ propertyName: 'Height', value: Math.abs(this.handlerPosition.height!) })
+        this.updateDataModel({ propertyName: 'Left', value: this.handlerPosition.left! > 0 ? this.size.left - Math.abs(this.handlerPosition.left!) : Math.abs(this.handlerPosition.left!) + this.size.left })
+        this.updateDataModel({ propertyName: 'Top', value: this.handlerPosition.top! > 0 ? this.size.top - Math.abs(this.handlerPosition.top!) : Math.abs(this.handlerPosition.top!) + this.size.top })
+      } else {
+        this.updateResize({ x: this.handlerPosition.movementX, y: this.handlerPosition.movementY, handler: this.resizeDiv })
+      }
+    }
     EventBus.$emit('endMoveControl')
     this.isMainSelect = false
     this.positions.offsetX = 0

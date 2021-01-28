@@ -1,19 +1,15 @@
-/*eslint-disable*/
 import { controlProperties } from '@/FormDesigner/controls-properties'
 import {
   PositionXYData,
   ScrollBarData
 } from '@/FormDesigner/controls-properties-types'
 import { PropType } from 'vue'
-import { Component, Emit, Prop, PropSync, Vue, Watch, Ref } from 'vue-property-decorator'
+import { Component, Emit, Prop, PropSync, Vue, Watch } from 'vue-property-decorator'
 import { EventBus } from '@/FormDesigner/event-bus'
 import FDEditableText from '@/FormDesigner/components/atoms/FDEditableText/index.vue'
 
 @Component({
-  name: 'FdControlVue',
-  components: {
-    FDEditableText
-  }
+  name: 'FdControlVue'
 })
 export default class FdControlVue extends Vue {
   @Prop({ required: true, type: Boolean }) public isRunMode!: boolean
@@ -24,8 +20,6 @@ export default class FdControlVue extends Vue {
   @Prop({ required: true, type: Object as PropType<controlData> }) public data! : controlData
   @Prop({ required: true, type: String }) public controlId! : string
   @Prop({ default: false }) isActivated: boolean
-
-
   isContentEditable: boolean = false
   selectionData :Array<string> = [];
   matchEntry: Array<number> = [];
@@ -44,15 +38,16 @@ export default class FdControlVue extends Vue {
     position: '',
     justifyContent: 'center',
     alignItems: '',
-    width: '',
-    alignSelf: 'center'
+    alignSelf: '',
+    width: ''
   }
   imageProperty={
     height: 'fit-content'
   }
   imagePos={
-    alignSelf:''
+    alignSelf: ''
   }
+
    // global variable to keep track of TripleState when enabled
    protected tripleState:number = 0
 
@@ -69,12 +64,13 @@ export default class FdControlVue extends Vue {
   protected checkboxRef: HTMLDivElement
   protected optionBtnRef: HTMLDivElement
   protected textareaRef: HTMLTextAreaElement
-  
+
   protected textSpanRef!: HTMLSpanElement
   protected imageRef: HTMLImageElement
   protected logoRef: HTMLSpanElement
   protected componentRef : HTMLSpanElement
   protected editableTextRef: FDEditableText
+
   preventClickOnce: boolean = false
   addEventCustomCallback (e: CustomMouseEvent) {
     this.controlEditMode(e)
@@ -1388,6 +1384,30 @@ parentConextMenu (event: MouseEvent) {
 openTextContextMenu (event: MouseEvent) {
   EventBus.$emit('openTextContextMenu', event, this.controlId)
 }
+get spanStyleObj () {
+  const controlProp = this.properties
+  const font: font = controlProp.Font
+    ? controlProp.Font
+    : {
+      FontName: 'Arial',
+      FontSize: 20,
+      FontItalic: true,
+      FontBold: true,
+      FontUnderline: true,
+      FontStrikethrough: true
+    }
+  return {
+    textDecoration:
+      font.FontStrikethrough === true && font.FontUnderline === true
+        ? 'underline line-through'
+        : font.FontUnderline
+          ? 'underline'
+          : font.FontStrikethrough
+            ? 'line-through'
+            : '',
+    color: !this.properties.Enabled ? 'gray' : ''
+  }
+}
 positionLogo (value:any) {
   let style = {
     order: Number(),
@@ -1472,64 +1492,39 @@ pictureSize () {
   if (this.properties.Picture) {
     Vue.nextTick(() => {
       // const imgProp = document.getElementById('img')
-        imgStyle.width = this.properties.Width! <= this.imageRef!.naturalWidth ? `${this.properties.Width}px` : 'fit-content'
-        imgStyle.height = this.properties.Height! <= this.imageRef!.naturalHeight ? `${this.properties.Height}px` : 'fit-content'    
-        if(this.properties.PicturePosition === 9 || this.properties.PicturePosition === 10 || this.properties.PicturePosition === 11 ){
-          this.imageRef.scrollIntoView(true)          
-        }
-        imgStyle.filter = !this.properties.Enabled ? 'sepia(0) grayscale(1) blur(3px) opacity(0.2)' : ''      
+      imgStyle.width = this.properties.Width! <= this.imageRef!.naturalWidth ? `${this.properties.Width}px` : 'fit-content'
+      imgStyle.height = this.properties.Height! <= this.imageRef!.naturalHeight ? `${this.properties.Height}px` : 'fit-content'
+      if (this.properties.PicturePosition === 9 || this.properties.PicturePosition === 10 || this.properties.PicturePosition === 11) {
+        this.imageRef.scrollIntoView(true)
+      }
+      imgStyle.filter = !this.properties.Enabled ? 'sepia(0) grayscale(1) blur(3px) opacity(0.2)' : ''
     })
   }
-  console.log("imgProp||",this.imageProperty)
   this.imageProperty = imgStyle
 }
 onPictureLoad () {
-  const  imgStyle={
-    width:'auto',
-    height:'auto',
+  const imgStyle = {
+    width: 'auto',
+    height: 'auto'
   }
   this.imageProperty = imgStyle
-    this.pictureSize()
-  }
-get spanStyleObj () {
-  const controlProp = this.properties
-  const font: font = controlProp.Font
-    ? controlProp.Font
-    : {
-      FontName: 'Arial',
-      FontSize: 20,
-      FontItalic: true,
-      FontBold: true,
-      FontUnderline: true,
-      FontStrikethrough: true
-    }
-  return {
-    textDecoration:
-      font.FontStrikethrough === true && font.FontUnderline === true
-        ? 'underline line-through'
-        : font.FontUnderline
-          ? 'underline'
-          : font.FontStrikethrough
-            ? 'line-through'
-            : '',
-    color: !this.properties.Enabled ? 'gray' : ''
-  }
+  this.pictureSize()
 }
-labelAlignment(){
+labelAlignment () {
   this.reverseStyle.alignSelf = 'inherit'
-  if (this.imageRef && this.imageRef.naturalHeight > this.properties.Height! ){
-        this.reverseStyle.alignSelf = 'inherit'
-      }
-  else {
-    let logoProp = this.logoRef 
-      if (this.properties.Width! >= logoProp!.clientWidth && this.properties.Height! >= logoProp!.clientHeight) {
-        this.reverseStyle.alignSelf = 'center'
-      }
+  if (this.imageRef && this.imageRef.naturalHeight > this.properties.Height!) {
+    this.reverseStyle.alignSelf = 'inherit'
+  } else {
+    let logoProp = this.logoRef
+    if (this.properties.Width! > logoProp!.clientWidth && this.properties.Height! > logoProp!.clientHeight && ((this.imageRef && this.imageRef.naturalHeight) < this.properties.Height! || (this.imageRef && this.imageRef.naturalWidth) < this.properties.Width!)) {
+      this.reverseStyle.alignSelf = 'center'
     }
+  }
 }
-getWidthHeight(){
-  const picPosLeftRight=[0,1,2,3,4,5]
-  const picPosTopBottom = [6,7,8,9,10,11]
+getWidthHeight () {
+  const picPosLeftRight = [0, 1, 2, 3, 4, 5]
+  const picPosTopBottom = [6, 7, 8, 9, 10, 11]
+  const controlWidthIncrease = ['optionbutton', 'checkbox']
   const imgHeight = this.imageRef && this.imageRef.naturalHeight
   const imgWidth = this.imageRef && this.imageRef.naturalWidth
   let labelHeight = 0
@@ -1538,51 +1533,56 @@ getWidthHeight(){
     width: 0,
     height: 0
   }
-  //calcluate text height
-  if(this.textSpanRef && this.textSpanRef.offsetHeight){
+  // calcluate text height
+  if (this.textSpanRef && this.textSpanRef.offsetHeight) {
     labelHeight = this.textSpanRef.offsetHeight
+  } else if ((this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef.$el as HTMLSpanElement).offsetHeight) {
+    labelHeight = (this.editableTextRef.$el as HTMLSpanElement).offsetHeight
   }
-  else if((this.editableTextRef.$el as HTMLSpanElement ) && (this.editableTextRef.$el as HTMLSpanElement ).offsetHeight){
-    labelHeight = (this.editableTextRef.$el as HTMLSpanElement ).offsetHeight
-  }
-  //calcuate text width
-  if(this.textSpanRef && this.textSpanRef.offsetWidth){
+  // calcuate text width
+  if (this.textSpanRef && this.textSpanRef.offsetWidth) {
     labelWidth = this.textSpanRef.offsetWidth
-  }
-  else if((this.editableTextRef.$el as HTMLSpanElement ) && (this.editableTextRef.$el as HTMLSpanElement ).offsetWidth) {
-    labelWidth = (this.editableTextRef.$el as HTMLSpanElement ).offsetWidth 
+  } else if ((this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef.$el as HTMLSpanElement).offsetWidth) {
+    labelWidth = (this.editableTextRef.$el as HTMLSpanElement).offsetWidth
   }
 
   let componentRef = this.componentRef
-  if(this.properties.Picture){
-  if( picPosLeftRight.includes(this.properties.PicturePosition!)){
-    if(imgHeight >= labelHeight) {
-      widthHeightData.height = imgHeight
-    } else {
-      widthHeightData.height = labelHeight
-    }
-    widthHeightData.width = (imgWidth + labelWidth) 
-  } 
-   else if(picPosTopBottom.includes(this.properties.PicturePosition!)){   
-     if(imgWidth >= labelWidth){
-       widthHeightData.width = imgWidth 
-     }else {
-       widthHeightData.width = labelWidth  
-     }
+  if (this.properties.Picture) {
+    if (picPosLeftRight.includes(this.properties.PicturePosition!)) {
+      if (imgHeight >= labelHeight) {
+        widthHeightData.height = imgHeight
+      } else {
+        widthHeightData.height = labelHeight
+      }
+      widthHeightData.width = (imgWidth + labelWidth)
+    } else if (picPosTopBottom.includes(this.properties.PicturePosition!)) {
+      if (imgWidth >= labelWidth) {
+        widthHeightData.width = imgWidth
+      } else {
+        widthHeightData.width = labelWidth
+      }
       widthHeightData.height = imgHeight + labelHeight
-   }
-   else if (this.properties.PicturePosition! === 12) {
-       widthHeightData.width = imgWidth >= labelWidth ? imgWidth : labelWidth
-       widthHeightData.height = imgHeight >= labelHeight ? imgHeight : labelHeight
-     }
-   }
-   else{
-    widthHeightData.width = labelWidth + 15
+    } else if (this.properties.PicturePosition! === 12) {
+      widthHeightData.width = imgWidth >= labelWidth ? imgWidth : labelWidth
+      widthHeightData.height = imgHeight >= labelHeight ? imgHeight : labelHeight
+    }
+  } else {
+    widthHeightData.width = this.properties.Name!.toLowerCase().includes('label') ? labelWidth + 5 : labelWidth + 15
     widthHeightData.height = labelHeight
-   }
-   if(this.properties.WordWrap){
-  widthHeightData.width = (((widthHeightData.width + 20) <  componentRef!.clientWidth) || (imgWidth > componentRef!.clientWidth )) ? widthHeightData.width : componentRef!.clientWidth
-   }
+  }
+  if (this.checkForWidthIncrease(controlWidthIncrease)) {
+    widthHeightData.width = widthHeightData.width + 5
+  } else if (this.properties.WordWrap) {
+    widthHeightData.width = (((widthHeightData.width + 20) < componentRef!.clientWidth) || (imgWidth > componentRef!.clientWidth)) ? widthHeightData.width : componentRef!.clientWidth
+  }
   return widthHeightData
+}
+checkForWidthIncrease (controlArr:Array<string>) {
+  for (let val of controlArr) {
+    if (this.properties.Name!.toLowerCase().includes(val)) {
+      return true
+    }
+  }
+  return false
 }
 }

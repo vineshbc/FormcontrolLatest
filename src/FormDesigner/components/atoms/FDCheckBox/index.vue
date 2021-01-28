@@ -64,12 +64,12 @@ import FDEditableText from '@/FormDesigner/components/atoms/FDEditableText/index
   }
 })
 export default class FDCheckBox extends Mixins(FdControlVue) {
-  @Ref('componentRef') componentRef: HTMLSpanElement
+  @Ref('componentRef') componentRef: HTMLDivElement
   @Ref('checkboxInput') checkboxInput!: HTMLInputElement;
   @Ref('spanRef') spanRef!: HTMLSpanElement;
-  @Ref('textSpanRef') textSpanRef!: HTMLSpanElement;
+  @Ref('textSpanRef') textSpanRef!: HTMLDivElement;
   @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('logoRef') logoRef : HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   $el: HTMLDivElement
   alignItem: boolean = false
@@ -351,6 +351,11 @@ export default class FDCheckBox extends Mixins(FdControlVue) {
 
   @Watch('properties.Caption', { deep: true })
   autoSizeValidateOnCaptionChange () {
+    if (this.properties.Picture) {
+      Vue.nextTick(() => {
+        this.labelAlignment()
+      })
+    }
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
@@ -421,13 +426,14 @@ export default class FDCheckBox extends Mixins(FdControlVue) {
         this.positionLogo(this.properties.PicturePosition)
       }
       this.$nextTick(() => {
+        const { width, height } = this.getWidthHeight()
         this.updateDataModel({
           propertyName: 'Height',
-          value: this.getWidthHeight().height + 5
+          value: height + 5
         })
         this.updateDataModel({
           propertyName: 'Width',
-          value: this.getWidthHeight().width
+          value: width
         })
       })
     } else {

@@ -26,10 +26,13 @@
         controlType="control"
         @createGroup="createGroup"
         @muldragControl="muldragControl"
+        @updateModel="updateModelHandle"
         @updateIsMove="updateIsMove"
         :size="{
           width: propControlData.properties.Width,
           height: propControlData.properties.Height,
+          left: propControlData.properties.Left,
+          top: propControlData.properties.Top
         }"
       />
       <component

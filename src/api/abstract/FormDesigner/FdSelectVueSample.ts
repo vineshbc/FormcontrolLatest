@@ -83,7 +83,6 @@ export default class FdSelectVueSample extends Vue {
             cH += value.Y
             break
         }
-        console.log(`cW=${cW}, cH=${cH}`)
         this.updatePosition({
           userFormId: this.userFormId,
           controlId: this.controlId,

@@ -216,6 +216,9 @@ interface IMousePosition {
   offsetX?: number
   offsetY?: number
 }
+interface IMouseHandler {
+  [x: string] : number
+}
 interface IResizeValue{
 x: number,
 y: number,

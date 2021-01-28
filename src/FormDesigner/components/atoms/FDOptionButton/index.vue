@@ -13,7 +13,7 @@
   <label class="control" :style="controlStyleObj">
     <input
         @change="handleChange($event, optionBtnRef)"
-        @click="SetValue()"
+        @click="setValue()"
         ref="optBtnInput"
         :name="properties.Name"
         :tabindex="properties.TabIndex"
@@ -65,12 +65,12 @@ import FDEditableText from '@/FormDesigner/components/atoms/FDEditableText/index
   }
 })
 export default class FDOptionButton extends Mixins(FdControlVue) {
-  @Ref('componentRef') componentRef: HTMLSpanElement
+  @Ref('componentRef') componentRef: HTMLDivElement
   @Ref('optBtnInput') optBtnInput!: HTMLInputElement;
   @Ref('spanRef') spanRef!: HTMLSpanElement;
-  @Ref('textSpanRef') textSpanRef!: HTMLSpanElement;
+  @Ref('textSpanRef') textSpanRef!: HTMLDivElement;
   @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('logoRef') logoRef : HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   $el: HTMLDivElement
   alignItem: boolean = false
@@ -112,7 +112,7 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
    * @description  updates Value property and the sets the backGround in runMode
    * @function setValue
    */
-  SetValue () {
+  setValue () {
     if (this.isRunMode) {
       this.updateDataModel({ propertyName: 'Value', value: 'true' })
       this.spanRef.style.backgroundColor = 'white'
@@ -175,6 +175,11 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
 
   @Watch('properties.Caption', { deep: true })
   autoSizeValidateOnCaptionChange () {
+    if (this.properties.Picture) {
+      Vue.nextTick(() => {
+        this.labelAlignment()
+      })
+    }
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
@@ -249,13 +254,14 @@ export default class FDOptionButton extends Mixins(FdControlVue) {
         this.positionLogo(this.properties.PicturePosition)
       }
       this.$nextTick(() => {
+        const { width, height } = this.getWidthHeight()
         this.updateDataModel({
           propertyName: 'Height',
-          value: this.getWidthHeight().height + 5
+          value: height + 5
         })
         this.updateDataModel({
           propertyName: 'Width',
-          value: this.getWidthHeight().width
+          value: width
         })
       })
     } else {

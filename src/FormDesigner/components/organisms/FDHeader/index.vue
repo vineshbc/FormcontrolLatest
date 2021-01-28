@@ -533,7 +533,6 @@ export default class Header extends FDCommonMethod {
       leftArray.unshift(ctrlSel[0])
       rightArray.push(ctrlSel[0])
     }
-    console.log(leftArray, '', rightArray)
     if (type === 'Left') {
       leftArray.sort((a, b) => {
         return usrFrmData[a].properties.Left! - usrFrmData[b].properties.Left!
@@ -1096,7 +1095,6 @@ export default class Header extends FDCommonMethod {
       leftArray.unshift(ctrlSel[0])
       rightArray.push(ctrlSel[0])
     }
-    console.log(leftArray, '', rightArray)
     if (type === 'Left') {
       leftArray.sort((a, b) => {
         return usrFrmData[b].properties.Left! - usrFrmData[a].properties.Left!
@@ -1112,7 +1110,6 @@ export default class Header extends FDCommonMethod {
         return usrFrmData[a].properties.Top! - usrFrmData[b].properties.Top!
       })
     }
-    console.log(leftArray, rightArray)
     const groupIndex: number = divstyle.findIndex(
       (val) => val.groupName === ctrlSel[0]
     )
@@ -1358,7 +1355,6 @@ export default class Header extends FDCommonMethod {
       leftArray.unshift(ctrlSel[0])
       rightArray.push(ctrlSel[0])
     }
-    console.log(leftArray, '', rightArray)
     if (type === 'Left') {
       leftArray.sort((a, b) => {
         return usrFrmData[b].properties.Left! - usrFrmData[a].properties.Left!
@@ -1374,7 +1370,6 @@ export default class Header extends FDCommonMethod {
         return usrFrmData[a].properties.Top! - usrFrmData[b].properties.Top!
       })
     }
-    console.log(leftArray, rightArray)
     for (let index = 1; index < leftArray.length; index++) {
       const prevCtrlProp = usrFrmData[leftArray[index - 1]].properties
       const ctrlProp = usrFrmData[leftArray[index]].properties
@@ -1594,7 +1589,6 @@ export default class Header extends FDCommonMethod {
         return usrFrmData[a].properties.Top! - usrFrmData[b].properties.Top!
       })
     }
-    console.log(buttonArray)
     const containerProp = usrFrmData[ctrlContainer].properties
     let value: number = 0
     const containerHeight = (usrFrmData[ctrlContainer].type === 'Userform')
@@ -1849,7 +1843,6 @@ export default class Header extends FDCommonMethod {
           }
         } else {
           if (Object.keys(nextSelctedSeries).length !== 0) {
-            console.log('nextSelctedSeries', nextSelctedSeries)
             const tempExchageIndex = userData[nextSelctedSeries[0]].extraDatas!.zIndex!
             const swapTabIndex = userData[nextSelectedControl].extraDatas!.zIndex!
             if (swapTabIndex <= userData[container].controls.length && swapTabIndex > 0) {

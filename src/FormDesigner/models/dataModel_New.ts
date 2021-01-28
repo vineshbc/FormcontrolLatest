@@ -5,7 +5,7 @@ export const userDataNew = {
   ID_USERFORM1: {
     ID_USERFORM1: {
       properties: {
-        BackColor: '#D6D5D5',
+        BackColor: '#eeeeef',
         BorderColor: '#ffffff',
         BorderStyle: 0,
         Caption: 'UserForm1',
@@ -19,9 +19,9 @@ export const userDataNew = {
           FontItalic: false,
           FontUnderline: false,
           FontStrikethrough: false,
-          FontStyle: 'Arial Narrow Italic'
+          FontStyle: 'Arial Narrow'
         },
-        ForeColor: '#ffffff',
+        ForeColor: '#000000',
         Height: 350,
         HelpContextID: 0,
         KeepScrollBarsVisible: 3,

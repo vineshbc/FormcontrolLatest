@@ -1,6 +1,7 @@
 <template>
   <div
     class="listStyle"
+    ref="listStyleOuterRef"
     :style="listStyleObj"
     :title="properties.ControlTipText"
     @click="listBoxClick"
@@ -12,12 +13,12 @@
   >
     <div class="table-style" :style="tableStyleObj" ref="listBoxTableRef" v-if="properties.RowSource !== ''">
       <div v-if="properties.ColumnHeads === true" class="theadClass">
-        <div class="thead">
-          <div
+        <div class="thead" :style="colHeadsStyle">
+          <template
             :style="tdStyleObj"
             v-if="properties.ListStyle === 1"
             class="tdClass"
-          ></div>
+          ></template>
           <template v-for="(a, columnIndex) in extraDatas.ColumnHeadsValues">
             <div
               v-if="
@@ -25,14 +26,15 @@
                 properties.ColumnCount === -1
               "
               :key="columnIndex"
-              :style="updateColHeads(columnIndex)"
+              :style="updateColumnHeads(columnIndex)"
+              class="colHeadsClass"
             >
               {{ a }}
             </div>
           </template>
         </div>
+        <hr v-if="properties.ColumnHeads" class="hrStyle"/>
       </div>
-      <!-- <div v-else></div> -->
       <div class="table-body">
         <div
           :tabindex="index"
@@ -71,7 +73,7 @@
             class="column-item"
             v-for="(i, index) in item"
             :key="index"
-            :style="[updateColumnWidths(index),styleColumnObj]"
+            :style="[columnItemObj(index),styleColumnObj]"
           >
             <template
               v-if="
@@ -83,6 +85,28 @@
         </div>
       </div>
     </div>
+    <div v-else>
+        <div v-if="properties.ColumnHeads === true" class="theadClass">
+                <div
+                  v-if="properties.RowSource === '' && properties.ColumnCount !== -1"
+                  :style="emptyColHeads"
+                >
+                <div v-if="properties.ListStyle === 1" :style="{display:'inline-block', width:'20px'}">
+                  <span class="bar" :style="{float:'right'}">|</span>
+                </div>
+                <div v-for="(a, i) in properties.ColumnCount" :key="i" :style="{display:'inline-block', width:'100px'}">
+                  <span v-if="a>1" class="bar" :key="i">|</span>
+                </div>
+                </div>
+                <div v-else-if="properties.ColumnCount === -1">
+                <div v-for="i in 10" :key="i" :style="{display:'inline-block', width:'100px'}">
+                  <span v-if="i < 10" class="bar" :key="i" :style="{float:'right'}">|</span>
+                </div>
+                </div>
+        <hr v-if="properties.ColumnHeads && properties.ColumnCount !== 0" class="hrStyle"/>
+        <div></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -90,8 +114,7 @@
 import {
   Component,
   Prop,
-  Model,
-  Emit,
+  Vue,
   Mixins,
   Watch,
   Ref
@@ -105,12 +128,503 @@ import { EventBus } from '@/FormDesigner/event-bus'
 export default class FDListBox extends Mixins(FdControlVue) {
   @Ref('listStyleRef') listStyleRef: HTMLDivElement[];
   @Ref('listBoxTableRef') listBoxTableRef!: HTMLDivElement;
+  @Ref('listStyleOuterRef') listStyleOuterRef!: HTMLDivElement;
   @Prop() isActivated: boolean;
-  @Prop() toolBoxSelect: string
+  @Prop() toolBoxSelectControl: string
   checkedvalue: boolean;
   $el: HTMLDivElement;
+
+  get emptyColHeads () {
+    return {
+      height: '15px'
+    }
+  }
+  updateColumnHeads (index: number) {
+    const controlProp = this.properties
+    return {
+      textAlign: controlProp.TextAlign === 0 ? 'left' : controlProp.TextAlign === 2 ? 'right' : 'center',
+      borderRight: index >= this.extraDatas.ColumnHeadsValues!.length - 1 ? '' : (index < controlProp.ColumnCount! - 1) ? '1px solid' : controlProp.ColumnCount === -1 ? (index < this.extraDatas.RowSourceData![0].length - 1) ? '1px solid' : '' : '',
+      overflow: 'hidden'
+    }
+  }
+
+  protected get colHeadsStyle (): Partial<CSSStyleDeclaration> {
+    const controlProp = this.properties
+    this.updateColumns()
+    return {
+      backgroundColor: controlProp.BackColor,
+      width: '100%'
+    }
+  }
+
+  @Watch('properties.ListStyle')
+  listStyleValidate () {
+    this.updateColumns()
+  }
+  @Watch('properties.ColumnWidths')
+  columnWidthsValidate () {
+    this.updateColumns()
+  }
+  @Watch('properties.ColumnCount')
+  columnCountValidate () {
+    this.updateColumns()
+  }
+  @Watch('properties.ColumnHeads')
+  columnHeadsValidate () {
+    // this.updateColumns()
+    Vue.nextTick(() => {
+      if (this.properties.ColumnHeads && this.listBoxTableRef) {
+        if (this.listBoxTableRef.children[0]) {
+          const header = this.listBoxTableRef.children[0] as HTMLDivElement
+          if (this.listBoxTableRef.children[1] && this.listBoxTableRef.children[1].children[0]) {
+            const body = this.listBoxTableRef.children[1].children[0] as HTMLDivElement
+            let totalWidth = 0
+            for (let j = 0; j < body.children.length; j++) {
+              totalWidth += body.children[j].clientWidth
+            }
+            header.style.width = (totalWidth - 3) + 'px'
+          }
+        }
+      }
+    })
+  }
+
+  columnItemObj (index: number) {
+    const controlProp = this.properties
+    this.updateColumns()
+    return {
+      position: 'relative',
+      display: 'inline-block',
+      width: 'calc(100% - 3px)',
+      textAlign: controlProp.TextAlign === 2 ? 'right' : controlProp.TextAlign === 1 ? 'center' : 'left',
+      overflow: 'hidden',
+      paddingBottom: this.data.properties.Font!.FontSize! > 48 ? '10px' : '5px'
+    }
+  }
+
+  updateColumns () {
+    this.columnHeadsValidate()
+    if (this.properties.RowSource !== '') {
+      let finalWidths:Array<number> = []
+      if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].className !== 'table-body') {
+        if (this.listBoxTableRef.children[0].children[0]) {
+          for (let j = 0; j < this.listBoxTableRef.children[0].children[0].children.length; j++) {
+            const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
+            if (this.properties.ColumnCount! === -1) {
+              if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
+                headWidth.style.minWidth = '100px'
+              }
+            }
+          }
+        }
+      }
+      if (this.properties.ColumnHeads) {
+        if (this.properties.ColumnWidths === '' && this.listBoxTableRef && this.listBoxTableRef.children[1]) {
+          if (this.listBoxTableRef.children[1].children[0]) {
+            let tempWidth
+            if (this.properties.ColumnCount! <= this.extraDatas.RowSourceData![0].length) {
+              if (this.properties.Width! > 100) {
+                if (this.properties.ColumnCount! === -1) {
+                  tempWidth = this.properties.Width! / this.extraDatas.RowSourceData![0].length
+                } else {
+                  tempWidth = this.properties.Width! / this.properties.ColumnCount!
+                }
+              } else {
+                tempWidth = 100
+              }
+            } else {
+              if (this.properties.Width! > 100) {
+                tempWidth = this.properties.Width! / this.extraDatas.RowSourceData![0].length
+              } else {
+                tempWidth = 100
+              }
+            }
+            for (let i = 0; i < this.listBoxTableRef.children[1].children.length; i++) {
+              if (this.properties.ListStyle === 0) {
+                Vue.nextTick(() => {
+                  if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0]) {
+                    for (let j = 0; j < this.listBoxTableRef.children[0].children[0].children.length; j++) {
+                      if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
+                        const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
+                        if (this.properties.ColumnCount !== -1) {
+                          if (j === this.listBoxTableRef.children[0].children[0].children.length - 1) {
+                            headWidth.style.width = finalWidths[j] + 'px'
+                          } else {
+                            headWidth.style.width = '100px'
+                          }
+                        }
+                      }
+                    }
+                  }
+                })
+                for (let j = 0; j < this.listBoxTableRef.children[1].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[1].children[i].children[j] as HTMLDivElement
+                  if (this.properties.ColumnCount! === -1) {
+                    if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
+                      width.style.width = tempWidth + 'px'
+                    }
+                  } else if (j + 1 > this.properties.ColumnCount!) {
+                    width.style.minWidth = '0px'
+                    width.style.width = '0px'
+                  } else {
+                    if (j < this.extraDatas.RowSourceData!.length) {
+                      width.style.minWidth = '100px'
+                      width.style.width = tempWidth + 'px'
+                    }
+                  }
+                }
+              } else {
+                Vue.nextTick(() => {
+                  if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0]) {
+                    for (let j = 0; j < this.listBoxTableRef.children[0].children[0].children.length; j++) {
+                      if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
+                        const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
+                        if (this.properties.ColumnCount !== -1) {
+                          if (j === this.listBoxTableRef.children[0].children[0].children.length - 1) {
+                            headWidth.style.width = finalWidths[j] + 'px'
+                          } else {
+                            headWidth.style.width = '100px'
+                          }
+                        }
+                      }
+                    }
+                  }
+                })
+                for (let j = 0; j < this.listBoxTableRef.children[1].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[1].children[i].children[j] as HTMLDivElement
+                  if (this.properties.ColumnCount! === -1) {
+                    if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
+                      width.style.width = '100px'
+                    }
+                  } else if (j === 1 && this.properties.ColumnCount! === 1) {
+                    width.style.width = this.properties.Width + 'px'
+                  } else if (j > this.properties.ColumnCount!) {
+                    width.style.minWidth = '0px'
+                    width.style.width = '0px'
+                  } else {
+                    if (j < this.extraDatas.RowSourceData!.length) {
+                      width.style.minWidth = '100px'
+                      width.style.width = (this.properties.Width! / this.properties.ColumnCount!) + 'px'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else if (this.listBoxTableRef && this.listBoxTableRef.children[1]) {
+          finalWidths = this.calculateColumnWidths()
+          if (this.listBoxTableRef.children[1].children[0]) {
+            for (let i = 0; i < this.listBoxTableRef.children[1].children.length; i++) {
+              if (this.properties.ListStyle === 0) {
+                for (let j = 0; j < this.listBoxTableRef.children[1].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[1].children[i].children[j] as HTMLDivElement
+                  if (j >= this.properties.ColumnCount! && this.properties.ColumnCount !== -1) {
+                    width.style.display = 'none'
+                  } else {
+                    width.style.display = 'inline-block'
+                    if (this.properties.ColumnCount === 1) {
+                      if (this.properties.Width! > finalWidths[0]) {
+                        width.style.width = this.properties.Width! + 'px'
+                      } else {
+                        width.style.width = finalWidths[0] + 'px'
+                      }
+                    } else {
+                      width.style.minWidth = '0px'
+                      width.style.width = finalWidths[j] + 'px'
+                    }
+                  }
+                  if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
+                    const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
+                    if (this.properties.ColumnCount === -1) {
+                      headWidth.style.display = 'inline-block'
+                      headWidth.style.minWidth = '0px'
+                      headWidth.style.width = finalWidths[j] + 'px'
+                    } else if (j >= this.properties.ColumnCount!) {
+                      headWidth.style.display = 'none'
+                    } else {
+                      headWidth.style.display = 'inline-block'
+                      if (this.properties.ColumnCount === 1) {
+                        if (this.properties.Width! > finalWidths[0]) {
+                          headWidth.style.width = this.properties.Width! + 'px'
+                        } else {
+                          headWidth.style.width = finalWidths[0] + 'px'
+                        }
+                      } else {
+                        headWidth.style.width = finalWidths[j] + 'px'
+                      }
+                    }
+                  }
+                }
+              } else {
+                for (let j = 0; j < this.listBoxTableRef.children[1].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[1].children[i].children[j] as HTMLDivElement
+                  if (j > 0) {
+                    if (j > this.properties.ColumnCount! && j > this.extraDatas.RowSourceData!.length - 1) {
+                      width.style.display = 'none'
+                    } else {
+                      width.style.display = 'inline-block'
+                      if (this.properties.ColumnCount === 1) {
+                        if (this.properties.Width! > finalWidths[0]) {
+                          width.style.width = this.properties.Width! + 'px'
+                        } else {
+                          width.style.width = finalWidths[0] + 'px'
+                        }
+                      } else {
+                        width.style.minWidth = '0px'
+                        width.style.width = finalWidths[j - 1] + 'px'
+                      }
+                    }
+                    if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
+                      const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
+                      if (this.properties.ColumnCount === -1) {
+                        headWidth.style.display = 'inline-block'
+                        headWidth.style.minWidth = '0px'
+                        headWidth.style.width = finalWidths[j] + 'px'
+                      } else if (j >= this.properties.ColumnCount!) {
+                        headWidth.style.display = 'none'
+                      } else {
+                        headWidth.style.display = 'inline-block'
+                        if (this.properties.ColumnCount === 1) {
+                          if (this.properties.Width! > finalWidths[0]) {
+                            headWidth.style.width = this.properties.Width! + 'px'
+                          } else {
+                            headWidth.style.width = finalWidths[0] + 'px'
+                          }
+                        } else {
+                          headWidth.style.width = finalWidths[j] + 'px'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } else {
+        if (this.properties.ColumnWidths === '' && this.listBoxTableRef && this.listBoxTableRef.children[0]) {
+          if (this.listBoxTableRef.children[0].children[0]) {
+            let tempWidth
+            if (this.properties.ColumnCount! <= this.extraDatas.RowSourceData![0].length) {
+              if (this.properties.Width! > 100) {
+                if (this.properties.ColumnCount! === -1) {
+                  tempWidth = this.properties.Width! / this.extraDatas.RowSourceData![0].length
+                } else {
+                  tempWidth = this.properties.Width! / this.properties.ColumnCount!
+                }
+              } else {
+                tempWidth = 100
+              }
+            } else {
+              if (this.properties.Width! > 100) {
+                tempWidth = this.properties.Width! / this.extraDatas.RowSourceData![0].length
+              } else {
+                tempWidth = 100
+              }
+            }
+            for (let i = 0; i < this.listBoxTableRef.children[0].children.length; i++) {
+              if (this.properties.ListStyle === 0) {
+                for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
+                  if (this.properties.ColumnCount! === -1) {
+                    if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
+                      width.style.width = tempWidth + 'px'
+                    }
+                  } else if (j + 1 > this.properties.ColumnCount!) {
+                    width.style.minWidth = '0px'
+                    width.style.width = '0px'
+                  } else {
+                    if (j < this.extraDatas.RowSourceData!.length) {
+                      width.style.minWidth = '100px'
+                      width.style.width = tempWidth + 'px'
+                    }
+                  }
+                }
+              } else {
+                for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
+                  if (this.properties.ColumnCount! === -1) {
+                    if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
+                      width.style.width = '100px'
+                    }
+                  } else if (j === 1 && this.properties.ColumnCount! === 1) {
+                    width.style.width = this.properties.Width + 'px'
+                  } else if (j > this.properties.ColumnCount!) {
+                    width.style.minWidth = '0px'
+                    width.style.width = '0px'
+                  } else {
+                    if (j < this.extraDatas.RowSourceData!.length) {
+                      width.style.minWidth = '100px'
+                      width.style.width = (this.properties.Width! / this.properties.ColumnCount!) + 'px'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else if (this.listBoxTableRef && this.listBoxTableRef.children[0]) {
+          finalWidths = this.calculateColumnWidths()
+          if (this.listBoxTableRef.children[0].children[0]) {
+            for (let i = 0; i < this.listBoxTableRef.children[0].children.length; i++) {
+              if (this.properties.ListStyle === 0) {
+                for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
+                  if (j >= this.properties.ColumnCount! && this.properties.ColumnCount !== -1) {
+                    width.style.display = 'none'
+                  } else {
+                    width.style.display = 'inline-block'
+                    if (this.properties.ColumnCount === 1) {
+                      if (this.properties.Width! > finalWidths[0]) {
+                        width.style.width = this.properties.Width! + 'px'
+                      } else {
+                        width.style.width = finalWidths[0] + 'px'
+                      }
+                    } else {
+                      width.style.minWidth = '0px'
+                      width.style.width = finalWidths[j] + 'px'
+                    }
+                  }
+                }
+              } else {
+                for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
+                  const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
+                  if (j > 0) {
+                    if (j > this.properties.ColumnCount! && j > this.extraDatas.RowSourceData!.length - 1) {
+                      width.style.display = 'none'
+                    } else {
+                      width.style.display = 'inline-block'
+                      if (this.properties.ColumnCount === 1) {
+                        if (this.properties.Width! > finalWidths[0]) {
+                          width.style.width = this.properties.Width! + 'px'
+                        } else {
+                          width.style.width = finalWidths[0] + 'px'
+                        }
+                      } else {
+                        width.style.minWidth = '0px'
+                        width.style.width = finalWidths[j - 1] + 'px'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  calculateColumnWidths () {
+    let a = (this.properties.ColumnWidths!.split(';'))
+    let b = []
+    let temp = 0
+    let totalWidth = this.properties.Width!
+    let totalColumnWidths = 0
+    let colWidths = this.properties.ColumnWidths!
+    let columnWidthCount = colWidths.split(';').length
+    let totalColumnCount = this.properties.ColumnCount! < this.extraDatas.RowSourceData![0].length ? this.properties.ColumnCount! : this.extraDatas.RowSourceData![0].length
+    let widths = []
+    let finalWidths:Array<number> = []
+    let lastColumWidth = 0
+    if (this.properties.ColumnCount === -1) {
+      if (columnWidthCount >= this.extraDatas.RowSourceData![0].length) {
+        for (let i = 0; i < this.extraDatas.RowSourceData![0].length; i++) {
+          if (i < this.extraDatas.RowSourceData![0].length) {
+            let tempWidth = parseInt(colWidths.split(';')[i], 10)
+            totalColumnWidths += tempWidth
+            widths.push(tempWidth)
+          }
+        }
+      } else {
+        let count = 0
+        let colWidthCalculatedCount = 0
+        let colWidth = 0
+        for (let i = 0; i < this.extraDatas.RowSourceData![0].length; i++) {
+          if (i < columnWidthCount) {
+            widths.push(parseInt(colWidths.split(';')[i], 10))
+            count = count + 1
+            totalColumnWidths += parseInt(colWidths.split(';')[i], 10)
+          } else {
+            if (totalWidth > totalColumnWidths) {
+              colWidthCalculatedCount = colWidthCalculatedCount + 1
+              if (colWidthCalculatedCount === 1) {
+                colWidth = ((totalWidth - totalColumnWidths) / (this.extraDatas.RowSourceData![0].length - count))
+              }
+              widths.push(colWidth)
+              totalColumnWidths += colWidth
+            } else {
+              widths.push(100)
+            }
+          }
+        }
+      }
+      if (totalWidth > totalColumnWidths) {
+        for (let i = 0; i < widths.length; i++) {
+          if (widths.length - 1 !== i) {
+            lastColumWidth = totalWidth - widths[i]!
+            finalWidths.push(widths[i])
+            totalWidth = lastColumWidth
+          } else {
+            finalWidths.push(lastColumWidth)
+          }
+        }
+      } else if (totalWidth <= totalColumnWidths) {
+        for (let j = 0; j < widths.length; j++) {
+          finalWidths.push(widths[j])
+        }
+      }
+    } else {
+      if (columnWidthCount >= totalColumnCount) {
+        for (let i = 0; i < totalColumnCount; i++) {
+          if (i < this.properties.ColumnCount!) {
+            let tempWidth = parseInt(colWidths.split(';')[i], 10)
+            totalColumnWidths += tempWidth
+            widths.push(tempWidth)
+          }
+        }
+      } else {
+        let count = 0
+        let colWidthCalculatedCount = 0
+        let colWidth = 0
+        for (let i = 0; i < totalColumnCount; i++) {
+          if (i < columnWidthCount) {
+            widths.push(parseInt(colWidths.split(';')[i], 10))
+            count = count + 1
+            totalColumnWidths += parseInt(colWidths.split(';')[i], 10)
+          } else {
+            if (totalWidth > totalColumnWidths) {
+              colWidthCalculatedCount = colWidthCalculatedCount + 1
+              if (colWidthCalculatedCount === 1) {
+                colWidth = ((totalWidth - totalColumnWidths) / (totalColumnCount - count))
+              }
+              widths.push(colWidth)
+              totalColumnWidths += colWidth
+            } else {
+              widths.push(100)
+            }
+          }
+        }
+      }
+      if (totalWidth > totalColumnWidths) {
+        for (let i = 0; i < widths.length; i++) {
+          if (widths.length - 1 !== i) {
+            lastColumWidth = totalWidth - widths[i]!
+            finalWidths.push(widths[i])
+            totalWidth = lastColumWidth
+          } else {
+            finalWidths.push(lastColumWidth)
+          }
+        }
+      } else if (totalWidth <= totalColumnWidths) {
+        for (let j = 0; j < widths.length; j++) {
+          finalWidths.push(widths[j])
+        }
+      }
+    }
+    return finalWidths
+  }
   handleMousedown (e: MouseEvent) {
-    if (this.toolBoxSelect === 'Select') {
+    if (this.toolBoxSelectControl === 'Select') {
       e.stopPropagation()
       if (this.properties.RowSource !== '') {
         if (
@@ -298,7 +812,8 @@ export default class FDListBox extends Mixins(FdControlVue) {
       width: `${controlProp.Width}px`,
       height: `${controlProp.Height}px`,
       top: `${controlProp.Top}px`,
-      display: display
+      display: display,
+      overflow: controlProp.RowSource === '' ? 'hidden' : this.$el && this.$el.scrollWidth > this.properties.Width! + 3 ? 'auto' : 'hidden'
     }
   }
 
@@ -375,13 +890,8 @@ export default class FDListBox extends Mixins(FdControlVue) {
           ? this.tempWeight
           : '',
       fontStretch: font.FontStyle !== '' ? this.tempStretch : '',
-      width:
-        controlProp.ColumnWidths === ''
-          ? '100%'
-          : `${controlProp.Width}px` +
-            parseInt(controlProp.ColumnWidths!) +
-            'px',
-      display: this.properties.ColumnCount === 0 ? 'none' : ''
+      width: '100%'
+      // display: this.properties.ColumnCount === 0 ? 'none' : ''
     }
   }
 
@@ -420,15 +930,30 @@ export default class FDListBox extends Mixins(FdControlVue) {
           let tempBoundColumn = this.properties.BoundColumn! - 1
           for (let i = 0; i < this.extraDatas.RowSourceData!.length; i++) {
             if (tempData[i][tempBoundColumn] === newVal) {
-              this.clearOptionBGColorAndChecked(this.tempListBoxComboBoxEvent)
+              const x = this.listStyleRef[i] as HTMLInputElement
+              x.checked = true
+            } if (tempData[i][tempBoundColumn] !== newVal) {
+              const x = this.listStyleRef[i] as HTMLInputElement
+              x.checked = false
+            }
+            const x = this.listStyleRef[i] as HTMLInputElement
+            if (x.checked) {
               this.listStyleRef[i].style.backgroundColor = 'rgb(59, 122, 231)'
-              this.setOptionBGColorAndChecked(
-              this.tempListBoxComboBoxEvent as MouseEvent
-              )
+            }
+            if (!x.checked) {
+              this.listStyleRef[i].style.backgroundColor = ''
+              if (this.listStyleRef[i] && this.listStyleRef[i].children.length > 0) {
+                const y = this.listStyleRef[i] as HTMLDivElement
+                for (let j = 0; j < y.children.length; j++) {
+                  const z = this.listStyleRef[i].children[j] as HTMLDivElement
+                  z.style.backgroundColor = ''
+                }
+              }
             }
           }
           if (tempData![0][this.properties.BoundColumn! - 1] === newVal) {
             this.updateDataModel({ propertyName: 'Value', value: newVal })
+            this.updateDataModel({ propertyName: 'Text', value: newVal })
           }
         } else {
           return undefined
@@ -510,12 +1035,17 @@ export default class FDListBox extends Mixins(FdControlVue) {
 
   @Watch('properties.RowSource')
   rowSourceValidate () {
-    const initialRowSourceData = this.extraDatas.RowSourceData!
-    this.updateDataModel({ propertyName: 'ControlSource', value: '' })
-    if (initialRowSourceData && initialRowSourceData.length === 0) {
-      this.updateDataModel({ propertyName: 'TopIndex', value: -1 })
-    } else {
-      this.updateDataModel({ propertyName: 'TopIndex', value: 0 })
+    if (this.properties.RowSource !== '') {
+      Vue.nextTick(() => {
+        this.updateColumns()
+      })
+      const initialRowSourceData = this.extraDatas.RowSourceData!
+      this.updateDataModel({ propertyName: 'ControlSource', value: '' })
+      if (initialRowSourceData && initialRowSourceData.length === 0) {
+        this.updateDataModel({ propertyName: 'TopIndex', value: -1 })
+      } else {
+        this.updateDataModel({ propertyName: 'TopIndex', value: 0 })
+      }
     }
   }
 
@@ -546,7 +1076,10 @@ export default class FDListBox extends Mixins(FdControlVue) {
       }
   }
   listBoxClick (e: MouseEvent) {
-    if (this.toolBoxSelect === 'Select') {
+    if (this.listStyleOuterRef && !this.isEditMode) {
+      this.listStyleOuterRef.scrollLeft = -1
+    }
+    if (this.toolBoxSelectControl === 'Select') {
       e.stopPropagation()
       this.selectedItem(e)
       if (!this.isActivated) {
@@ -555,7 +1088,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
     }
   }
   stopMousedown (event: MouseEvent) {
-    if (this.toolBoxSelect === 'Select') {
+    if (this.toolBoxSelectControl === 'Select') {
       event.stopPropagation()
     }
   }
@@ -564,13 +1097,10 @@ export default class FDListBox extends Mixins(FdControlVue) {
 
 <style scoped>
 .listStyle {
-  width: 200px;
-  height: 200px;
   background-color: lightgray;
   border: 1px solid gray;
   overflow: auto;
   box-sizing: border-box;
-  /* box-shadow: -1px -1px lightgray; */
 }
 .list-outer {
   border: 0.1px solid lightgray;
@@ -581,7 +1111,8 @@ export default class FDListBox extends Mixins(FdControlVue) {
 }
 .tr {
   outline: none;
-  display: flex;
+  display: inline-flex;
+  min-width: calc(100% - 3px);
 }
 .ul {
   display: grid;
@@ -644,8 +1175,11 @@ export default class FDListBox extends Mixins(FdControlVue) {
   width: 100%;
 }
 .theadClass {
-  border-bottom: 1px solid;
+  /* border-bottom: 1px solid; */
   white-space: nowrap;
+  position: sticky;
+  top: 0px;
+  z-index: 1;
 }
 .tdClass {
   width: 15px;
@@ -658,6 +1192,22 @@ export default class FDListBox extends Mixins(FdControlVue) {
   margin: 0;
 }
 .thead {
-  display: flex;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.colHeadsClass {
+  display: inline-block;
+  width: 100px;
+}
+.hrStyle {
+  display: block !important;
+  margin: 0px;
+  width: 100% !important;
+}
+.bar {
+  font-size: 13px;
 }
 </style>

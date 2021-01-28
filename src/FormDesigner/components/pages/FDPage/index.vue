@@ -205,7 +205,6 @@ export default class FDPage extends Vue {
   }
   onDrag () {
     (this.$el as HTMLDivElement).focus()
-    console.log('dragging')
   }
   created () {
     this.tabData = this.userformData[this.userFormId][this.userFormId]

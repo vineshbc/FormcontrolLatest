@@ -48,10 +48,10 @@ import Vue from 'vue'
 })
 export default class FDLabel extends Mixins(FdControlVue) {
   $el!: HTMLLabelElement;
-  @Ref('componentRef') componentRef: HTMLSpanElement
-  @Ref('textSpanRef') textSpanRef!: HTMLSpanElement
+  @Ref('componentRef') componentRef: HTMLLabelElement
+  @Ref('textSpanRef') textSpanRef!: HTMLDivElement
   @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('logoRef') logoRef : HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description style object is passed to :style attribute in label tag
@@ -162,6 +162,11 @@ export default class FDLabel extends Mixins(FdControlVue) {
 
   @Watch('properties.Caption', { deep: true })
   autoSizeValidateOnCaptionChange () {
+    if (this.properties.Picture) {
+      Vue.nextTick(() => {
+        this.labelAlignment()
+      })
+    }
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
@@ -232,13 +237,14 @@ export default class FDLabel extends Mixins(FdControlVue) {
           this.positionLogo(this.properties.PicturePosition)
         }
         this.$nextTick(() => {
+          const { width, height } = this.getWidthHeight()
           this.updateDataModel({
             propertyName: 'Height',
-            value: this.getWidthHeight().height + 5
+            value: height + 5
           })
           this.updateDataModel({
             propertyName: 'Width',
-            value: this.getWidthHeight().width
+            value: width
           })
         })
       }

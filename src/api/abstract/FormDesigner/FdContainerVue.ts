@@ -34,6 +34,9 @@ export default abstract class FdContainerVue extends FdControlVue {
   selectedAreaStyle: ISelectedArea | undefined
   selMultipleCtrl: boolean = false
   activateCtrl: boolean = false
+  backColorProp = ['Frame', 'CheckBox', 'OptionButton', 'Label', 'MultiPage']
+  foreColorProp = ['Frame', 'CheckBox', 'OptionButton', 'Label', 'MultiPage', 'TabStrip']
+  fontProp = ['Frame', 'CheckBox', 'OptionButton', 'Label', 'MultiPage', 'TabStrip', 'ToggleButton', 'CommandButton']
 
   get selConatiner () {
     return this.selectedControls[this.userFormId].container
@@ -208,6 +211,9 @@ export default abstract class FdContainerVue extends FdControlVue {
    */
   addControlObj (e: MouseEvent, pageId: string) {
     if (this.toolBoxSelect !== 'Select' && this.toolBoxSelect !== '') {
+      debugger
+      const container = this.userformData[this.userFormId][this.controlId]
+      const containerProp = container.properties
       const type = this.userformData[this.userFormId][this.controlId].type
       const item = this.generateControlId(this.toolBoxSelect)
       const sw = parseInt(this.selectedAreaStyle!.width!)
@@ -217,6 +223,11 @@ export default abstract class FdContainerVue extends FdControlVue {
       item.properties.Top = parseInt(this.selectedAreaStyle!.top)
       item.properties.Width = (isNaN(sw!) || sw! === 0) ? item.properties.Width : sw
       item.properties.Height = (isNaN(sh!) || sh! === 0) ? item.properties.Height : sh
+      if (container.type === 'Userform' || container.type === 'Frame') {
+        item.properties.BackColor = this.backColorProp.includes(item.type) ? containerProp.BackColor : item.properties.BackColor
+        item.properties.ForeColor = this.foreColorProp.includes(item.type) ? containerProp.ForeColor : item.properties.ForeColor
+        item.properties.Font = this.fontProp.includes(item.type) ? { ...containerProp.Font } : { ...item.properties.Font }
+      }
       const controls = item.controls
       item.controls = item.type === 'MultiPage' ? [] : item.controls
       const newControlId = type === 'MultiPage' ? pageId : this.controlId

@@ -1,5 +1,5 @@
 <template>
-<div ref="componentRef">
+<div ref="componentRef" :tabindex="properties.TabIndex">
   <button
     class="toggle-button"
     :style="styleObj"
@@ -55,7 +55,7 @@ import Vue from 'vue'
   }
 })
 export default class FDToggleButton extends Mixins(FdControlVue) {
-  $el!: HTMLButtonElement;
+  $el!: HTMLDivElement;
   isClicked: boolean = true;
   isFocus: boolean = false;
   clickCount: number = 0;
@@ -249,6 +249,11 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
 
   @Watch('properties.Caption', { deep: true })
   autoSizeValidateOnCaptionChange () {
+    if (this.properties.Picture) {
+      Vue.nextTick(() => {
+        this.labelAlignment()
+      })
+    }
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
@@ -318,13 +323,14 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
         this.positionLogo(this.properties.PicturePosition)
       }
       this.$nextTick(() => {
+        const { width, height } = this.getWidthHeight()
         this.updateDataModel({
           propertyName: 'Height',
-          value: this.getWidthHeight().height + 5
+          value: height + 5
         })
         this.updateDataModel({
           propertyName: 'Width',
-          value: this.getWidthHeight().width
+          value: width
         })
       })
     } else {
