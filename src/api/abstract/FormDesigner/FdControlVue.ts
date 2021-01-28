@@ -1534,6 +1534,10 @@ getWidthHeight(){
   const imgWidth = this.imageRef && this.imageRef.naturalWidth
   let labelHeight = 0
   let labelWidth = 0
+  let widthHeightData = {
+    width: 0,
+    height: 0
+  }
   //calcluate text height
   if(this.textSpanRef && this.textSpanRef.offsetHeight){
     labelHeight = this.textSpanRef.offsetHeight
@@ -1550,10 +1554,6 @@ getWidthHeight(){
   }
 
   let componentRef = this.componentRef
-  let widthHeightData = {
-    width: labelWidth + 15,
-    height: labelHeight + 10
-  }
   if(this.properties.Picture){
   if( picPosLeftRight.includes(this.properties.PicturePosition!)){
     if(imgHeight >= labelHeight) {
@@ -1576,7 +1576,13 @@ getWidthHeight(){
        widthHeightData.height = imgHeight >= labelHeight ? imgHeight : labelHeight
      }
    }
+   else{
+    widthHeightData.width = labelWidth + 15
+    widthHeightData.height = labelHeight
+   }
+   if(this.properties.WordWrap){
   widthHeightData.width = (((widthHeightData.width + 20) <  componentRef!.clientWidth) || (imgWidth > componentRef!.clientWidth )) ? widthHeightData.width : componentRef!.clientWidth
+   }
   return widthHeightData
 }
 }
