@@ -1511,41 +1511,35 @@ onPictureLoad () {
   this.pictureSize()
 }
 labelAlignment () {
+  let { picPosLeftRight, picPosTopBottom, imgHeight, labelHeight } = this.setHeightWidthVariable()
+  let totalHeight = {
+    height: 0
+  }
+
+  if (picPosLeftRight.includes(this.properties.PicturePosition!)) {
+    totalHeight.height = labelHeight
+  } else if (picPosTopBottom.includes(this.properties.PicturePosition!)) {
+    totalHeight.height = imgHeight + labelHeight
+  } else if (this.properties.PicturePosition! === 12) {
+    totalHeight.height = imgHeight >= labelHeight ? imgHeight : labelHeight
+  }
+
   this.reverseStyle.alignSelf = 'inherit'
   if (this.imageRef && this.imageRef.naturalHeight > this.properties.Height!) {
     this.reverseStyle.alignSelf = 'inherit'
   } else {
     let logoProp = this.logoRef
-    if (this.properties.Width! > logoProp!.clientWidth && this.properties.Height! > logoProp!.clientHeight && ((this.imageRef && this.imageRef.naturalHeight) < this.properties.Height! || (this.imageRef && this.imageRef.naturalWidth) < this.properties.Width!)) {
+    if (this.properties.Width! > logoProp!.clientWidth && this.properties.Height! > totalHeight.height && ((this.imageRef && this.imageRef.naturalHeight) < this.properties.Height! || (this.imageRef && this.imageRef.naturalWidth) < this.properties.Width!)) {
       this.reverseStyle.alignSelf = 'center'
     }
   }
 }
 getWidthHeight () {
-  const picPosLeftRight = [0, 1, 2, 3, 4, 5]
-  const picPosTopBottom = [6, 7, 8, 9, 10, 11]
-  const controlWidthIncrease = ['optionbutton', 'checkbox']
-  const imgHeight = this.imageRef && this.imageRef.naturalHeight
-  const imgWidth = this.imageRef && this.imageRef.naturalWidth
-  let labelHeight = 0
-  let labelWidth = 0
   let widthHeightData = {
     width: 0,
     height: 0
   }
-  // calcluate text height
-  if (this.textSpanRef && this.textSpanRef.offsetHeight) {
-    labelHeight = this.textSpanRef.offsetHeight
-  } else if ((this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef.$el as HTMLSpanElement).offsetHeight) {
-    labelHeight = (this.editableTextRef.$el as HTMLSpanElement).offsetHeight
-  }
-  // calcuate text width
-  if (this.textSpanRef && this.textSpanRef.offsetWidth) {
-    labelWidth = this.textSpanRef.offsetWidth
-  } else if ((this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef.$el as HTMLSpanElement).offsetWidth) {
-    labelWidth = (this.editableTextRef.$el as HTMLSpanElement).offsetWidth
-  }
-
+  let { picPosLeftRight, picPosTopBottom, controlWidthIncrease, imgHeight, imgWidth, labelHeight, labelWidth } = this.setHeightWidthVariable()
   let componentRef = this.componentRef
   if (this.properties.Picture) {
     if (picPosLeftRight.includes(this.properties.PicturePosition!)) {
@@ -1567,11 +1561,11 @@ getWidthHeight () {
       widthHeightData.height = imgHeight >= labelHeight ? imgHeight : labelHeight
     }
   } else {
-    widthHeightData.width = this.properties.Name!.toLowerCase().includes('label') ? labelWidth + 5 : labelWidth + 15
+    widthHeightData.width = labelWidth + 5
     widthHeightData.height = labelHeight
   }
   if (this.checkForWidthIncrease(controlWidthIncrease)) {
-    widthHeightData.width = widthHeightData.width + 5
+    widthHeightData.width = widthHeightData.width + 15
   } else if (this.properties.WordWrap) {
     widthHeightData.width = (((widthHeightData.width + 20) < componentRef!.clientWidth) || (imgWidth > componentRef!.clientWidth)) ? widthHeightData.width : componentRef!.clientWidth
   }
@@ -1584,5 +1578,29 @@ checkForWidthIncrease (controlArr:Array<string>) {
     }
   }
   return false
+}
+
+setHeightWidthVariable () {
+  const picPosLeftRight = [0, 1, 2, 3, 4, 5]
+  const picPosTopBottom = [6, 7, 8, 9, 10, 11]
+  const controlWidthIncrease = ['optionbutton', 'checkbox']
+  const imgHeight = this.imageRef && this.imageRef.naturalHeight
+  const imgWidth = this.imageRef && this.imageRef.naturalWidth
+  let labelHeight = 0
+  let labelWidth = 0
+  // calcluate text height
+  if (this.textSpanRef && this.textSpanRef.offsetHeight) {
+    labelHeight = this.textSpanRef.offsetHeight
+  } else if ((this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef.$el as HTMLSpanElement).offsetHeight) {
+    labelHeight = (this.editableTextRef.$el as HTMLSpanElement).offsetHeight
+  }
+  // calcuate text width
+  if (this.textSpanRef && this.textSpanRef.offsetWidth) {
+    labelWidth = this.textSpanRef.offsetWidth
+  } else if ((this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef.$el as HTMLSpanElement).offsetWidth) {
+    labelWidth = (this.editableTextRef.$el as HTMLSpanElement).offsetWidth
+  }
+
+  return { picPosLeftRight, picPosTopBottom, controlWidthIncrease, imgHeight, imgWidth, labelHeight, labelWidth }
 }
 }

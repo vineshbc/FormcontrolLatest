@@ -59,7 +59,7 @@ export default class FDLabel extends Mixins(FdControlVue) {
    * @function cssStyleProperty
    *
    */
-  protected get cssStyleProperty (): Partial<CSSStyleDeclaration> {
+  protected get cssStyleProperty () {
     const controlProp = this.properties
     this.reverseStyle.justifyContent = 'center'
     if (!controlProp.Picture) {
@@ -127,7 +127,8 @@ export default class FDLabel extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
+      // textUnderlinePosition: 'under',
       fontWeight: font.FontBold ? 'bold' : (font.FontStyle !== '') ? this.tempWeight : '',
       fontStretch: (font.FontStyle !== '') ? this.tempStretch : '',
       display: display,
@@ -287,7 +288,8 @@ export default class FDLabel extends Mixins(FdControlVue) {
 }
 .spanClass {
   text-decoration: underline;
-  text-underline-position: under;
+  text-decoration-skip-ink: none
+  /* text-underline-position: under; */
 }
 #logo{
  display: inline-flex;
