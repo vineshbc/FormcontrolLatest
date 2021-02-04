@@ -28,6 +28,7 @@
       :type="propertyType"
       @change="updateAppearance"
       @input="updateCaptionProperty"
+      @keydown="validateELetter"
     />
   </div>
 </template>
@@ -77,6 +78,16 @@ export default class FDCustomInput extends Vue {
       this.updateAppearance(e)
     } else {
       e.preventDefault()
+    }
+  }
+  validateELetter (e: KeyboardEvent) {
+    if (this.propertyType === 'number') {
+      if (['e'].includes(e.key)) {
+        e.preventDefault()
+        if (e.target instanceof HTMLInputElement) {
+          e.target.value = this.propertyValue!.toString()
+        }
+      }
     }
   }
 }

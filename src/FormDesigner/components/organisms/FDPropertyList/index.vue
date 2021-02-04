@@ -35,7 +35,8 @@
     </div>
     <FDTable v-if="selectedSelect.length > 0" :tableData="propertyTableData"
       :userFormId="userFormId"
-      :getSelectedControlsDatas="getSelectedControlsDatas" />
+      :getSelectedControlsDatas="getSelectedControlsDatas"
+      :resultArray="resultArray" />
   </div>
 </template>
 
@@ -62,6 +63,7 @@ export default class PropertiesList extends FDCommonMethod {
 
   propList = new PropertyListDefine();
   selected: string | number | font | null | undefined = null
+  resultArray: boolean[] = []
 
   isTableVisible = false;
   hideShowTable () {
@@ -107,16 +109,32 @@ export default class PropertiesList extends FDCommonMethod {
         result = this.updateResult(controlData.properties)
       } else if (this.getSelectedControlsDatas!.length > 1) {
         let ctrlKeys = []
-        const uniqueKey = ['Name', 'TabIndex', 'Index', 'MouseIcon', 'Picture', 'Cancel', 'Default', 'Value', 'Style']
+        let selCntrlType = []
+        const checkValArr = [['CheckBox', 'OptionButton', 'ToggleButton'],
+          ['TextBox', 'ListBox', 'ComboBox'],
+          ['TabStrip', 'MultiPage', 'SpinButton', 'ScrollBar']]
+
+        const uniqueKey = ['Name', 'TabIndex', 'Index', 'MouseIcon', 'Picture', 'Cancel', 'Default', 'Style']
         const combinedObj: ICommonProp = {}
         const commonPropValue: ICommonPropVal = {}
+        this.resultArray = []
 
         // get array of Object which property Object of selected Controls
         for (const controlIndex in this.getSelectedControlsDatas!) {
           const controlData = this.userformData[this.userFormId][this.getSelectedControlsDatas![controlIndex]]
           const defineList = this.propList.data[controlData.type]
+          selCntrlType.push(this.userformData[this.userFormId][this.getSelectedControlsDatas![controlIndex]].type)
           ctrlKeys.push(Object.keys(defineList))
         }
+        const uniqueSelType = selCntrlType.filter((v, i, a) => a.indexOf(v) === i)
+
+        for (let i = 0; i < checkValArr.length; i++) {
+          this.resultArray[i] = checkValArr[i].some(item => uniqueSelType.includes(item))
+        }
+        if (this.resultArray.filter((x: boolean) => { return x === true }).length > 1) {
+          uniqueKey.push('Value')
+        }
+
         // get the array which include common key of selected controls
         let commonProp = ctrlKeys.reduce((a, b) => a.filter((c: string) => b.includes(c)))
 

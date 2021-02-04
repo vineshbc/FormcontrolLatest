@@ -14,22 +14,29 @@
     <div
       class="inner-window-content"
       :style="innerWindowBodyStyle"
-      @click="addControlObj($event, data)"
-      @mousedown="deActiveControl(this)"
       @contextmenu.stop="showContextMenu($event, userFormId, controlId, 'container')"
-      @mouseup="dragSelectorControl($event)"
       ref="innerUserForm"
       @scroll="updateScrollingLeftTop"
     >
       <Container
         class="container"
+        :style="containerStyleObj"
         :userFormId="userFormId"
         :controlId="controlId"
         :containerId="controlId"
         :isEditMode="true"
+        :getScrollBarX="getScrollBarX"
+        :getScrollBarY="getScrollBarY"
         ref="containerRef"
         :mouseCursorData="getMouseCursorData"
         :getSampleDotPattern="getSampleDotPattern"
+        :createBackgroundString="createBackgroundString"
+        :getSizeMode="getSizeMode"
+        :getRepeatData="getRepeatData"
+        :getPosition="getPosition"
+        @deActiveControl="deActControl"
+        @dragSelectorControl="dragSelectorControl"
+        @addControlObj="addContainerControl"
       >
       </Container>
     </div>
@@ -38,7 +45,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Prop, Vue, Ref, Watch } from 'vue-property-decorator'
+import { Component, Emit, Prop, Vue, Ref, Watch, Mixins } from 'vue-property-decorator'
 import Container from '@/FormDesigner/components/organisms/FDContainer/index.vue'
 import { State, Action } from 'vuex-class'
 import FDSVGImage from '@/FormDesigner/components/atoms/FDSVGImage/index.vue'
@@ -85,7 +92,7 @@ export default class UserForm extends FdContainerVue {
   }
 
   protected get getSampleDotPattern () {
-    const dotSize = 10
+    const dotSize = 13
     const dotSpace = 9
     return {
       backgroundPosition: `${dotSize}px ${dotSize}px`,
@@ -129,9 +136,19 @@ export default class UserForm extends FdContainerVue {
       position: 'relative',
       width: '100%',
       height: '100%',
-      backgroundColor: this.properties.BackColor,
-      overflowX: this.getScrollBarX,
-      overflowY: this.getScrollBarY
+      backgroundColor: this.properties.BackColor
+    }
+  }
+
+  protected get containerStyleObj (): Partial<CSSStyleDeclaration> {
+    return {
+      width: 'calc(100% - 2px)',
+      height: 'calc(100% - 2px)',
+      borderLeft: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 2 ? '2px solid gray' : this.data.properties.SpecialEffect === 3 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 4 ? '0.5px solid gray' : '',
+      borderRight: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 1 ? '2px solid gray' : this.data.properties.SpecialEffect === 4 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 3 ? '0.5px solid gray' : '',
+      borderTop: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 2 ? '2px solid gray' : this.data.properties.SpecialEffect === 3 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 4 ? '0.5px solid gray' : '',
+      borderBottom: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 1 ? '2px solid gray' : this.data.properties.SpecialEffect === 4 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 3 ? '0.5px solid gray' : '',
+      borderColor: this.data.properties.BorderStyle === 1 ? this.data.properties.BorderColor : ''
     }
   }
   protected get innerWindowBodyStyle (): Partial<CSSStyleDeclaration> {
@@ -144,12 +161,6 @@ export default class UserForm extends FdContainerVue {
     const scale = (this.properties.Zoom! * 10) / 100
     const controlProp = this.properties
     return {
-      height: controlProp.ScrollHeight === 0 || controlProp.ScrollHeight! < controlProp.Height! ? (controlProp.Height! - 30) + 'px' : (controlProp.ScrollHeight! - 30) + 'px',
-      width: controlProp.ScrollWidth === 0 || controlProp.ScrollWidth! < controlProp.Width! ? controlProp.Width! + 'px' : controlProp.ScrollWidth! + 'px',
-      borderLeft: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 2 ? '2px solid gray' : this.data.properties.SpecialEffect === 3 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 4 ? '0.5px solid gray' : '',
-      borderRight: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 1 ? '2px solid gray' : this.data.properties.SpecialEffect === 4 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 3 ? '0.5px solid gray' : '',
-      borderTop: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 2 ? '2px solid gray' : this.data.properties.SpecialEffect === 3 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 4 ? '0.5px solid gray' : '',
-      borderBottom: this.data.properties.BorderStyle === 1 ? '1px solid ' + this.data.properties.BorderColor : this.data.properties.SpecialEffect === 1 ? '2px solid gray' : this.data.properties.SpecialEffect === 4 ? '1.5px solid gray' : this.data.properties.SpecialEffect === 3 ? '0.5px solid gray' : '',
       cursor:
         this.properties.MousePointer !== 0 || this.properties.MouseIcon !== ''
           ? `${this.getMouseCursorData} !important`
@@ -165,12 +176,7 @@ export default class UserForm extends FdContainerVue {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      fontWeight: font.FontBold ? 'bold' : '',
-      borderColor: this.data.properties.BorderStyle === 1 ? this.data.properties.BorderColor : '',
-      backgroundImage: this.createBackgroundString,
-      backgroundSize: this.getSizeMode,
-      backgroundRepeat: this.getRepeatData,
-      backgroundPosition: this.getPosition
+      fontWeight: font.FontBold ? 'bold' : ''
     }
   }
 
@@ -215,6 +221,12 @@ export default class UserForm extends FdContainerVue {
     return {
       textAlign: this.properties.RightToLeft ? 'right' : 'left'
     }
+  }
+  deActControl () {
+    this.deActiveControl()
+  }
+  addContainerControl (event: MouseEvent) {
+    this.addControlObj(event, this.controlId)
   }
 }
 </script>

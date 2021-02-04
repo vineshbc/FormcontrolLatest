@@ -10,32 +10,28 @@
     @keydown.shift.exact.stop="selectMultipleCtrl($event,true)"
     @keydown.delete.stop.exact="deleteFrame"
     @keydown.enter.exact="setContentEditable($event, true)"
-    @click.stop="!isEditMode ? selectedItem : addControlObj($event)"
     @contextmenu.stop="showContextMenu($event, controlId, controlId, 'container', isEditMode)"
-    @mousedown="frameMouseDown"
-    @mouseup="dragSelectorControl($event)"
     @keyup.stop="selectMultipleCtrl($event, false)"
   >
     <legend ref="fieldsetRef" :style="legendCssStyleProperty">{{ properties.Caption }}</legend>
-    <div :style="scrollSize" ref="frame" @scroll="updateScrollingLeftTop">
-      <div v-if="properties.Picture!==''" class="pictureDiv" :style="pictureDivObj">
-    <Container
-      :userFormId="userFormId"
-      :controlId="controlId"
-      :containerId="controlId"
-      :isEditMode="isEditMode"
-      ref="containerRef"
-      :getSampleDotPattern="getSampleDotPattern"
-    />
-      </div>
-      <div  v-else :style="scrollStyle">
+    <div :style="scrollSize" ref="frame" >
+      <div>
       <Container
       :userFormId="userFormId"
       :controlId="controlId"
       :containerId="controlId"
       :isEditMode="isEditMode"
       :getSampleDotPattern="getSampleDotPattern"
+      :getScrollBarX="getScrollBarX"
+      :getScrollBarY="getScrollBarY"
       ref="containerRef"
+      :createBackgroundString="createBackgroundString"
+      :getSizeMode="getSizeMode"
+      :getRepeatData="getRepeatData"
+      :getPosition="getPosition"
+      @deActiveControl="deActControl"
+      @dragSelectorControl="dragSelectorControl"
+      @addControlObj="addContainerControl"
       />
       </div>
   </div>
@@ -44,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Prop, Ref, Watch } from 'vue-property-decorator'
+import { Component, Emit, Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
 import FdControlVue from '@/api/abstract/FormDesigner/FdControlVue'
 import { Action } from 'vuex-class'
 import Vue from 'vue'
@@ -59,12 +55,10 @@ import { EventBus } from '@/FormDesigner/event-bus'
       import('@/FormDesigner/components/organisms/FDContainer/index.vue')
   }
 })
-export default class FDFrame extends FdContainerVue {
+export default class FDFrame extends Mixins(FdContainerVue) {
   @Ref('containerRef') readonly containerRef!: Container;
   @Ref('frame') readonly frame!: HTMLDivElement;
   @Ref('fieldsetRef') fieldsetRef: HTMLLegendElement;
-  @Prop({ required: true, type: Boolean }) public readonly isEditMode: boolean;
-  mode: boolean = false;
   captionHeight: number = 0;
 
   /**
@@ -79,7 +73,7 @@ export default class FDFrame extends FdContainerVue {
    * @function getSampleDotPattern
    */
   protected get getSampleDotPattern () {
-    const dotSize = 10
+    const dotSize = 13
     const dotSpace = 9
     return {
       backgroundPosition: `${dotSize}px ${dotSize}px`,
@@ -89,7 +83,7 @@ export default class FDFrame extends FdContainerVue {
   }
 
   mounted () {
-    this.scrollLeftTop(this.data)
+    // this.scrollLeftTop(this.data)
     if (this.fieldsetRef) {
       this.captionHeight = this.fieldsetRef.offsetHeight!
     }
@@ -112,17 +106,6 @@ export default class FDFrame extends FdContainerVue {
       this.captionHeight = this.fieldsetRef.offsetHeight!
     })
   }
-
-  @Watch('properties.ScrollLeft')
-  updateScrollLeft () {
-    this.scrollLeftTop(this.data)
-  }
-
-  @Watch('properties.ScrollTop')
-  updateScrollTop () {
-    this.scrollLeftTop(this.data)
-  }
-
   @Watch('properties.Visible')
   updateViisible () {
     this.updateEditMode(false)
@@ -132,23 +115,6 @@ export default class FDFrame extends FdContainerVue {
   updateEditMode (val: boolean) {
     return val
   }
-
-  /**
-   * @description sets scrollbar left and top position
-   * @function scrollLeftTop
-   * @param controlData propControlData passed as input
-   */
-  scrollLeftTop (controlData: controlData) {
-    const scrollLeft: number = this.properties.ScrollLeft!
-    const scrollTop: number = this.properties.ScrollTop!
-    if (scrollLeft > 0) {
-      (this.frame as IScrollRef).scrollLeft = scrollLeft
-    }
-    if (scrollTop > 0) {
-      (this.frame as IScrollRef).scrollTop = scrollTop
-    }
-  }
-
   /**
    * @description style object is passed to :style attribute in div tag
    * dynamically changing the styles of the component based on propControlData
@@ -220,32 +186,11 @@ export default class FDFrame extends FdContainerVue {
       borderTop: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 2 ? '2px solid gray' : controlProp.SpecialEffect === 3 ? '1.5px solid gray' : controlProp.SpecialEffect === 4 ? '0.5px solid gray' : 'none',
       borderBottom: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 1 ? '2px solid gray' : controlProp.SpecialEffect === 4 ? '1.5px solid gray' : controlProp.SpecialEffect === 3 ? '0.5px solid gray' : 'none',
       backgroundColor: controlProp.BackColor,
-      backgroundPosition: this.getPosition,
       display: display,
-      zoom: `${controlProp.Zoom}%`,
+      // zoom: `${controlProp.Zoom}%`,
       whiteSpace: 'nowrap',
       textOverflow: 'ellipsis',
       maxWidth: `${controlProp.Width!}px`
-    }
-  }
-
-  get pictureDivObj () {
-    const controlProp = this.properties
-    return {
-      height: controlProp.ScrollHeight === 0 || controlProp.ScrollHeight! < controlProp.Height! ? controlProp.Height! + 'px' : controlProp.ScrollHeight! + 'px',
-      width: controlProp.ScrollWidth === 0 || controlProp.ScrollWidth! < controlProp.Width! ? controlProp.Width! + 'px' : controlProp.ScrollWidth! + 'px',
-      backgroundImage: controlProp.Picture === ''
-        ? ''
-        : this.createBackgroundString,
-      backgroundSize: controlProp.Picture === ''
-        ? this.getSampleDotPattern.backgroundSize
-        : this.getSizeMode,
-      backgroundColor: controlProp.Picture !== '' ? '' : controlProp.BackColor,
-      backgroundRepeat: this.getRepeatData,
-      backgroundPosition: controlProp.Picture !== ''
-        ? this.getPosition
-        : this.getSampleDotPattern.backgroundPosition,
-      opactity: controlProp.Picture === '' ? '0' : '1'
     }
   }
   /**
@@ -274,8 +219,6 @@ export default class FDFrame extends FdContainerVue {
     return {
       width: `${controlProp.Width! - 3}px`,
       height: this.fieldsetRef ? (controlProp.Height! - (this.captionHeight / 2) - 2) + 'px' : '100%',
-      overflowX: this.getScrollBarX,
-      overflowY: this.getScrollBarY,
       position: 'relative',
       top: this.fieldsetRef && this.properties.Caption !== '' ? '-' + ((this.captionHeight / 2) - 1) + 'px' : ''
     }
@@ -299,7 +242,6 @@ export default class FDFrame extends FdContainerVue {
   }
 
   frameMouseDown (e: MouseEvent) {
-    EventBus.$emit('isEditMode', this.isEditMode)
     this.selectedItem(e)
     const selContainer = this.selectedControls[this.userFormId].container[0]
     if (selContainer === this.controlId) {
@@ -326,21 +268,6 @@ export default class FDFrame extends FdContainerVue {
       this.handleKeyDown(event)
     }
   }
-  updateScrollingLeftTop (e: MouseEvent) {
-    const refName = this.frame
-    this.updateControl({
-      userFormId: this.userFormId,
-      controlId: this.controlId,
-      propertyName: 'ScrollLeft',
-      value: refName.scrollLeft
-    })
-    this.updateControl({
-      userFormId: this.userFormId,
-      controlId: this.controlId,
-      propertyName: 'ScrollTop',
-      value: refName.scrollTop
-    })
-  }
   selectMultipleCtrl (event: KeyboardEvent, val: boolean) {
     if (event.key === 'Control' && event.keyCode === 17) {
       this.selMultipleCtrl = val
@@ -348,6 +275,16 @@ export default class FDFrame extends FdContainerVue {
     } else if (event.key === 'Shift' && event.keyCode === 16) {
       this.activateCtrl = val
       EventBus.$emit('actMultipleCtrl', val)
+    }
+  }
+  deActControl (event: MouseEvent) {
+    this.frameMouseDown(event)
+  }
+  addContainerControl (event: MouseEvent) {
+    if (!this.isEditMode) {
+      this.selectedItem(event)
+    } else {
+      this.addControlObj(event, this.controlId)
     }
   }
 }

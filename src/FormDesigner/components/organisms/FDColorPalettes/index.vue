@@ -151,7 +151,6 @@ export default class FDColorPalettes extends Vue {
     }
   }
   get colorPallete () {
-    debugger
     const height = 174
     const colorPalleteTop = window.innerHeight > (this.top + height + 12) ? this.top + 12 : this.top - height - 12
     const colorPaletteLeft = (this.left - 195) > 0 ? this.left - 195 : 0

@@ -17,6 +17,7 @@
       tabindex="1"
       @click="toFocus"
     >
+    <div class="combobox-inner" :style="boxBorderStyle">
       <div
         :class="properties.SelectionMargin ? 'selectionDiv' : ''"
         :style="selectionStyle"
@@ -159,6 +160,7 @@
           </svg>
         </div>
       </div>
+    </div>
       <div class="items" :class="{ selectHide: !open }" :style="itemsStyleObj" ref="itemsRef">
         <div
           class="listStyle"
@@ -283,7 +285,6 @@ import {
   Ref
 } from 'vue-property-decorator'
 import FdControlVue from '@/api/abstract/FormDesigner/FdControlVue'
-import { Mutation, Action, Getter } from 'vuex-class'
 @Component({
   name: 'FDComboBox'
 })
@@ -310,6 +311,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   inBlur: boolean = false;
   headWidth: string = '100%';
   controlZIndex: number = -1;
+  newColumnWidthsValue: string = '';
   makeOpen () {
     this.open = true
   }
@@ -355,9 +357,50 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
+  @Watch('isEditMode')
+  editModeValidate () {
+    if (this.properties.ShowDropButtonWhen === 1) {
+      if (this.isEditMode) {
+        this.isVisible = true
+      } else {
+        this.isVisible = false
+      }
+    }
+  }
   @Watch('properties.ColumnWidths')
   columnWidthsValidate () {
     this.updateColumns()
+  }
+
+  @Watch('properties.TextAlign')
+  textAlignValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.DropButtonStyle')
+  dropButtonStyleValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.Enabled')
+  enabledValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.SelectionMargin')
+  selectionMarginValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.ShowDropButtonWhen')
+  showDropButtonWhenValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
   }
   @Watch('properties.ColumnCount')
   columnCountValidate () {
@@ -700,9 +743,17 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   get selectionStyle () {
     const controlProp = this.properties
     return {
+      width: 'fit-content'
+    }
+  }
+
+  get boxBorderStyle () {
+    const controlProp = this.properties
+    return {
       borderLeft:
-        controlProp.BorderStyle === 1
-          ? '1px solid ' + controlProp.BorderColor
+      controlProp.BorderStyle === 1
+        ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 1
+          ? '1px solid gray'
           : controlProp.SpecialEffect === 2
             ? '2px solid gray'
             : controlProp.SpecialEffect === 3
@@ -710,9 +761,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
               : controlProp.SpecialEffect === 4
                 ? '0.5px solid gray'
                 : '',
-      borderTop:
-        controlProp.BorderStyle === 1
-          ? '0.25px solid ' + controlProp.BorderColor
+      borderTop: controlProp.BorderStyle === 1
+        ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 1
+          ? '1px solid gray'
           : controlProp.SpecialEffect === 2
             ? '2px solid gray'
             : controlProp.SpecialEffect === 3
@@ -721,8 +772,23 @@ export default class FDComboBox extends Mixins(FdControlVue) {
                 ? '0.5px solid gray'
                 : '',
       borderBottom: controlProp.BorderStyle === 1
-        ? '0.25px solid ' + controlProp.BorderColor : ''
-
+        ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 1
+          ? '2px solid gray'
+          : controlProp.SpecialEffect === 4
+            ? '1.5px solid gray'
+            : controlProp.SpecialEffect === 3
+              ? '0.5px solid gray'
+              : '',
+      borderRight:
+        controlProp.BorderStyle === 1
+          ? '1px solid' + controlProp.BorderColor
+          : controlProp.SpecialEffect === 1
+            ? '2px solid gray'
+            : controlProp.SpecialEffect === 4
+              ? '1.5px solid gray'
+              : controlProp.SpecialEffect === 3
+                ? '0.5px solid gray'
+                : ''
     }
   }
 
@@ -980,6 +1046,8 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         tempLabel.style.display = 'inline'
         tempLabel.style.fontStyle = textareaRef.style.fontStyle
         tempLabel.style.fontSize = parseInt(textareaRef.style.fontSize) + 'px'
+        tempLabel.style.fontFamily = textareaRef.style.fontFamily
+        tempLabel.style.fontStretch = textareaRef.style.fontStretch
         tempLabel.style.whiteSpace = textareaRef.style.whiteSpace
         tempLabel.style.wordBreak = textareaRef.style.wordBreak
         tempLabel.style.fontWeight = textareaRef.style.fontWeight
@@ -993,8 +1061,8 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           propertyName: 'Width',
           value:
             tempLabel.offsetWidth > 20
-              ? tempLabel.offsetWidth + 21
-              : tempLabel.offsetWidth + 25
+              ? tempLabel.offsetWidth + 25
+              : tempLabel.offsetWidth + 29
         })
         this.updateDataModel({
           propertyName: 'Height',
@@ -1036,7 +1104,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
-  protected get tableStyleObj (): Partial<CSSStyleDeclaration> {
+  protected get tableStyleObj () {
     const controlProp = this.properties
     const font: font = controlProp.Font
       ? controlProp.Font
@@ -1066,7 +1134,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold
         ? 'bold'
         : font.FontStyle !== ''
@@ -1078,7 +1146,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
-  protected get cssStyleProperty (): Partial<CSSStyleDeclaration> {
+  protected get cssStyleProperty () {
     const controlProp = this.properties
     const font: font = controlProp.Font
       ? controlProp.Font
@@ -1113,7 +1181,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold
         ? 'bold'
         : font.FontStyle !== ''
@@ -1187,6 +1255,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   }
   @Watch('properties.Value', { deep: true })
   textAndValueUpdateProp (newVal: string, oldVal: string) {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
     if (this.properties.RowSource !== '') {
       if (
         this.properties.BoundColumn! > 0 &&
@@ -1314,31 +1385,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   protected get boxStyleObj (): Partial<CSSStyleDeclaration> {
     const controlProp = this.properties
     return {
-      borderColor: controlProp.BorderStyle === 1 ? controlProp.BorderColor : '',
-      borderRight:
-        controlProp.BorderStyle === 1
-          ? 'none'
-          : controlProp.SpecialEffect === 1
-            ? '2px solid gray'
-            : controlProp.SpecialEffect === 4
-              ? '1.5px solid gray'
-              : controlProp.SpecialEffect === 3
-                ? '0.5px solid gray'
-                : '',
-      borderBottom:
-        controlProp.BorderStyle === 1
-          ? 'none'
-          : controlProp.SpecialEffect === 1
-            ? '2px solid gray'
-            : controlProp.SpecialEffect === 4
-              ? '1.5px solid gray'
-              : controlProp.SpecialEffect === 3
-                ? '0.5px solid gray'
-                : '',
-      display: 'grid',
-      gridTemplateColumns: `${controlProp.Width! - 20}px` + ' 21px',
-      gridTemplateRows: `${controlProp.Height! + 1}px`,
-      outline: 'none'
+      display: 'block',
+      outline: 'none',
+      overflow: 'hidden'
     }
   }
 
@@ -1398,17 +1447,25 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           : 'default',
       display: 'flex',
       justifyContent: 'center',
-      alignItems: controlProp.DropButtonStyle === 1 ? 'center' : 'flex-end',
-      borderTop: '1px solid' + controlProp.BorderColor,
-      borderRight: '1px solid' + controlProp.BorderColor,
-      borderBottom: '1px solid' + controlProp.BorderColor
+      alignItems: controlProp.DropButtonStyle === 1 ? 'center' : 'flex-end'
+      // borderTop:
+      //   controlProp.BorderStyle === 1
+      //     ? '0.25px solid ' + controlProp.BorderColor
+      //     : controlProp.SpecialEffect === 2
+      //       ? '2px solid gray'
+      //       : controlProp.SpecialEffect === 3
+      //         ? '1.5px solid gray'
+      //         : controlProp.SpecialEffect === 4
+      //           ? '0.5px solid gray'
+      //           : '0px',
+      // borderColor: controlProp.BorderStyle === 1 ? controlProp.BorderColor : ''
     }
   }
   enabledCheck (e: MouseEvent) {
     if (this.isRunMode || this.isActivated || this.isEditMode) {
       if (this.open) {
-        this.textareaRef.focus()
         this.open = false
+        this.textareaRef.focus()
       } else if (this.inBlur) {
         this.open = false
       } else {
@@ -1460,7 +1517,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   background-repeat: no-repeat;
   cursor: pointer;
   width: 20px;
-  height: calc(100% - 2px);
+  height: auto;
 }
 
 .items {
@@ -1632,5 +1689,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
 .bar {
   font-size: 13px;
   color: black;
+}
+.combobox-inner {
+  display: flex;
+  width: fit-content;
 }
 </style>

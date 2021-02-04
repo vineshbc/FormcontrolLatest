@@ -15,7 +15,7 @@
     <img v-if="properties.Picture" id="img" :src="properties.Picture" :style="[imageProperty,imagePos]" ref="imageRef">
     <div v-if="!syncIsEditMode" id="label" ref="textSpanRef" :style="labelStyle" >
        <span :style="spanStyleObj">{{ computedCaption.afterbeginCaption }}</span>
-          <span class="spanStyle" :style="spanStyleObj">{{
+          <span class="spanClass" :style="spanStyleObj">{{
             computedCaption.acceleratorCaption
           }}</span>
           <span :style="spanStyleObj">{{ computedCaption.beforeendCaption }}</span>
@@ -89,6 +89,28 @@ export default class FDLabel extends Mixins(FdControlVue) {
         this.labelAlignment()
       })
     }
+    let borderStyles = {}
+    if (controlProp.SpecialEffect !== 0) {
+      borderStyles = {
+        borderStyle: controlProp.SpecialEffect === 3 || controlProp.SpecialEffect === 4 ? 'solid' : controlProp.SpecialEffect === 1 ? 'outset' : controlProp.SpecialEffect === 2 ? 'inset' : '',
+        borderLeftColor: controlProp.SpecialEffect === 1 ? 'white' : controlProp.SpecialEffect === 3 ? 'gray' : controlProp.SpecialEffect === 4 ? 'gray' : '',
+        borderTopColor: controlProp.SpecialEffect === 1 ? 'white' : controlProp.SpecialEffect === 3 ? 'gray' : controlProp.SpecialEffect === 4 ? 'gray' : '',
+        borderRightColor: controlProp.SpecialEffect === 2 ? 'white' : controlProp.SpecialEffect === 3 ? 'gray' : controlProp.SpecialEffect === 4 ? 'gray' : '',
+        borderBottomColor: controlProp.SpecialEffect === 2 ? 'white' : controlProp.SpecialEffect === 3 ? 'gray' : controlProp.SpecialEffect === 4 ? 'gray' : '',
+        borderLeftWidth: controlProp.SpecialEffect === 1 ? '2px' : controlProp.SpecialEffect === 2 ? '3px' : controlProp.SpecialEffect === 3 ? '2px' : controlProp.SpecialEffect === 4 ? '0.5px' : '',
+        borderTopWidth: controlProp.SpecialEffect === 1 ? '2px' : controlProp.SpecialEffect === 2 ? '3px' : controlProp.SpecialEffect === 3 ? '2px' : controlProp.SpecialEffect === 4 ? '0.5px' : '',
+        borderRightWidth: controlProp.SpecialEffect === 2 ? '2px' : controlProp.SpecialEffect === 1 ? '3px' : controlProp.SpecialEffect === 3 ? '0.5px' : controlProp.SpecialEffect === 4 ? '2px' : '',
+        borderBottomWidth: controlProp.SpecialEffect === 2 ? '2px' : controlProp.SpecialEffect === 1 ? '3px' : controlProp.SpecialEffect === 3 ? '0.5px' : controlProp.SpecialEffect === 4 ? '2px' : ''
+      }
+    } else if (controlProp.BorderStyle !== 0) {
+      borderStyles = {
+        borderLeft: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : '',
+        borderRight: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : '',
+        borderTop: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : '',
+        borderBottom: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : ''
+      }
+    }
+    console.log('SPE', controlProp.SpecialEffect)
     return {
       ...(!controlProp.AutoSize && this.renderSize),
       ...this.baseStyle,
@@ -104,10 +126,8 @@ export default class FDLabel extends Mixins(FdControlVue) {
           : controlProp.TextAlign === 1
             ? 'center'
             : 'right',
-      borderLeft: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 2 ? '2px solid gray' : controlProp.SpecialEffect === 3 ? '1.5px solid gray' : controlProp.SpecialEffect === 4 ? '0.5px solid gray' : '',
-      borderRight: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 1 ? '2px solid gray' : controlProp.SpecialEffect === 4 ? '1.5px solid gray' : controlProp.SpecialEffect === 3 ? '0.5px solid gray' : '',
-      borderTop: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 2 ? '2px solid gray' : controlProp.SpecialEffect === 3 ? '1.5px solid gray' : controlProp.SpecialEffect === 4 ? '0.5px solid gray' : '',
-      borderBottom: controlProp.BorderStyle === 1 ? '1px solid ' + controlProp.BorderColor : controlProp.SpecialEffect === 1 ? '2px solid gray' : controlProp.SpecialEffect === 4 ? '1.5px solid gray' : controlProp.SpecialEffect === 3 ? '0.5px solid gray' : '',
+      borderImage: '',
+      ...borderStyles,
       whiteSpace: controlProp.WordWrap ? 'pre-wrap' : 'pre',
       wordBreak: controlProp.WordWrap ? 'break-all' : 'normal',
       color:
@@ -128,7 +148,6 @@ export default class FDLabel extends Mixins(FdControlVue) {
               ? 'line-through'
               : '',
       textDecorationSkipInk: 'none',
-      // textUnderlinePosition: 'under',
       fontWeight: font.FontBold ? 'bold' : (font.FontStyle !== '') ? this.tempWeight : '',
       fontStretch: (font.FontStyle !== '') ? this.tempStretch : '',
       display: display,
@@ -221,6 +240,17 @@ export default class FDLabel extends Mixins(FdControlVue) {
       this.updateAutoSize()
     }
   }
+
+  @Watch('properties.Enabled', {
+    deep: true
+  })
+  checkEnabled (newVal: boolean, oldVal: boolean) {
+    if (!this.properties.Enabled) {
+      this.imageProperty.filter = 'sepia(0) grayscale(1) blur(3px) opacity(0.2)'
+    } else {
+      this.imageProperty.filter = ''
+    }
+  }
   /**
    * @description updateAutoSize calls Vuex Actions to update object
    * @function updateAutoSize
@@ -231,7 +261,8 @@ export default class FDLabel extends Mixins(FdControlVue) {
       if (this.componentRef) {
         const imgStyle = {
           width: 'fit-content',
-          height: 'fit-content'
+          height: 'fit-content',
+          filter: ''
         }
         this.imageProperty = imgStyle
         if (this.properties.Picture) {
@@ -288,8 +319,7 @@ export default class FDLabel extends Mixins(FdControlVue) {
 }
 .spanClass {
   text-decoration: underline;
-  text-decoration-skip-ink: none
-  /* text-underline-position: under; */
+  text-decoration-skip-ink: none;
 }
 #logo{
  display: inline-flex;

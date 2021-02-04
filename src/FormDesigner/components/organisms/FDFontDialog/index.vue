@@ -119,7 +119,7 @@
                 <div>
                   Size:
                   <br />
-                  <input type="number" class="font-input-3" :value="this.size" @input="setFontSize"/>
+                  <input type="number" class="font-input-3" :value="this.size" @keydown="validateELetter" @input="setFontSize"/>
                   <br />
                   <div class="font-third-frame">
                     <div v-for="size11 in size1" :key="size11">
@@ -194,6 +194,7 @@ import { newFont } from '../../../models/newFont'
 import { Component, Vue, Prop, Emit, Ref } from 'vue-property-decorator'
 import FDSVGImage from '@/FormDesigner/components/atoms/FDSVGImage/index.vue'
 import FdDialogDragVue from '@/api/abstract/FormDesigner/FdDialogDragVue'
+import { EventBus } from '@/FormDesigner/event-bus'
 
 export interface INewFont {
   [key: string]: string[];
@@ -251,11 +252,20 @@ export default class FDFontDialog extends FdDialogDragVue {
     FontStrikethrough: false,
     FontStyle: 'Arial Narrow Italic'
   };
+  validateELetter (event : KeyboardEvent) {
+    if (['e', '-', '+'].includes(event.key)) {
+      event.preventDefault()
+    }
+  }
   setFontSize (event : KeyboardEvent) {
     if (event.target instanceof HTMLInputElement) {
-      const val = parseInt(event.target.value)
-      if (val > 0 && val <= 72) {
-        this.sizeValue(val)
+      if (event.target.value) {
+        if (event.target.value.length > 5) {
+          event.target.value = this.tempVal.FontSize!.toString()
+        } else {
+          const val = parseFloat(event.target.value)
+          if (val !== 0) { this.sizeValue(val) }
+        }
       }
     }
   }
@@ -332,28 +342,45 @@ export default class FDFontDialog extends FdDialogDragVue {
       }
     })
   }
-  updateFont () {
-    if (!this.tempVal.FontName) {
-      this.tempVal.FontName = this.newFont[0][0]
-    }
-    if (!this.tempVal.FontStyle) {
-      this.tempVal.FontStyle = this.newFont[this.tempVal.FontName][0]
-    }
-    if (this.fontWeight === 'bold' && this.fontStyle1 === 'italic') {
-      this.tempVal.FontBold = true
-      this.tempVal.FontItalic = true
-    } else if (this.fontStyle1 === 'italic') {
-      this.tempVal.FontBold = false
-      this.tempVal.FontItalic = true
-    } else if (this.fontWeight === 'bold') {
-      this.tempVal.FontBold = true
-      this.tempVal.FontItalic = false
+  validateFontSize (val: number) {
+    if (val) {
+      if (isNaN(val) || val.toString().indexOf('.') > -1) {
+        EventBus.$emit('showErrorPopup', true, 'info', `Size must be a number.`)
+        return false
+      } else if (val < 0) {
+        this.sizeValue(429466)
+      } else if (val > 0 && val <= 429466) {
+        this.sizeValue(val)
+      }
     } else {
-      this.tempVal.FontBold = false
-      this.tempVal.FontItalic = false
+      this.tempVal.FontSize = this.tempVal.FontSize
     }
-    this.emitFont(this.tempVal)
-    this.setFontDialogVisiblilty(false)
+    return true
+  }
+  updateFont () {
+    if (this.validateFontSize(this.tempVal.FontSize!)) {
+      if (!this.tempVal.FontName) {
+        this.tempVal.FontName = this.newFont[0][0]
+      }
+      if (!this.tempVal.FontStyle) {
+        this.tempVal.FontStyle = this.newFont[this.tempVal.FontName][0]
+      }
+      if (this.fontWeight === 'bold' && this.fontStyle1 === 'italic') {
+        this.tempVal.FontBold = true
+        this.tempVal.FontItalic = true
+      } else if (this.fontStyle1 === 'italic') {
+        this.tempVal.FontBold = false
+        this.tempVal.FontItalic = true
+      } else if (this.fontWeight === 'bold') {
+        this.tempVal.FontBold = true
+        this.tempVal.FontItalic = false
+      } else {
+        this.tempVal.FontBold = false
+        this.tempVal.FontItalic = false
+      }
+      this.emitFont(this.tempVal)
+      this.setFontDialogVisiblilty(false)
+    }
   }
   @Emit('emitFont')
   emitFont (tempVal: font) {
@@ -566,7 +593,7 @@ h1 {
   outline: none;
 }
 .font-input-3 {
-  width: 57px;
+  width: 60px;
   height: 13px;
   border: 1px solid white;
   box-shadow: -1px -1px grey;
@@ -593,7 +620,7 @@ h1 {
   margin-left: 1px;
 }
 .font-third-frame {
-  width: 60px;
+  width: 63px;
   border: 1px solid white;
   box-shadow: -1px -1px grey;
   background: white;

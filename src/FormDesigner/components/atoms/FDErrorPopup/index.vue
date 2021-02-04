@@ -3,7 +3,7 @@
     <div class="outer-error-div popup">
       <div class="header-error">
         <div>
-          <span>Visual Basic for Applications IDE</span>
+          <span>{{ info ? 'Font' : 'Visual Basic for Applications IDE'}}</span>
         </div>
         <div>
           <button class="ui-btn close" @click="isOpen=false">
@@ -25,9 +25,14 @@
               src="../../../../assets/pop-up-caution.jpg"
               class="err-msg"
             />
-            <img v-else
+            <img v-else-if="invalid"
               alt="Invalid"
               src="../../../../assets/invalid1.jpg"
+              class="err-msg"
+            />
+            <img v-else
+              alt="Info"
+              src="../../../../assets/info-icon.png"
               class="err-msg"
             />
           </div>
@@ -39,7 +44,7 @@
       <div class="footer-error">
         <div></div>
         <button @click="isOpen=false">OK</button>
-        <button @click="isOpen=false">Help</button>
+        <button v-if="invalid || overflow" @click="isOpen=false">Help</button>
       </div>
     </div>
   </div>
@@ -47,7 +52,7 @@
 
 <script lang="ts">
 import { EventBus } from '@/FormDesigner/event-bus'
-import { Component, Prop, Ref, Watch, Vue } from 'vue-property-decorator'
+import { Component, Vue } from 'vue-property-decorator'
 @Component({
   name: 'FDErrorPopup'
 })
@@ -56,7 +61,7 @@ export default class FDErrorPopup extends Vue {
       invalid: boolean = false
       errorMessage: string = ''
       isOpen: boolean = false
-
+      info: boolean = false
       get overlayStyle () {
         return {
           visibility: this.isOpen ? 'visible' : 'hidden',
@@ -67,8 +72,10 @@ export default class FDErrorPopup extends Vue {
         EventBus.$on('showErrorPopup', (show: boolean, type: string, message : string) => {
           if (type === 'invalid') {
             this.invalid = show
-          } else {
+          } else if (type === 'overflow') {
             this.overflow = show
+          } else {
+            this.info = show
           }
           this.isOpen = show
           this.errorMessage = message

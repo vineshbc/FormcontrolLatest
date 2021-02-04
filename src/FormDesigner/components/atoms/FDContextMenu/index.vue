@@ -64,7 +64,9 @@
               </ul>
             </li>
           </ul>
+          <div style="margin-top: 2px;">
           <div class="triangle-right"></div>
+          </div>
         </button>
       </div>
     </div>
@@ -507,7 +509,7 @@ export default class ContextMenu extends FDCommonMethod {
         return 'zIndex' in userData[val].extraDatas! && (userData[val].extraDatas!.zIndex === tempZIndex - 1)
       })
       const nextSelectedControl = controlIndex !== -1 ? Object.keys(userData)[controlIndex] : ''
-      const nextControlType = userData[nextSelectedControl].type
+      // const nextControlType = userData[nextSelectedControl].type
       if (nextSelectedControl !== '' && !highProrControl.includes(selControl)) {
         if (getSelControl!.includes(nextSelectedControl)) {
           if (!nextSelctedSeries.includes(selControl)) {
@@ -1010,24 +1012,24 @@ export default class ContextMenu extends FDCommonMethod {
     const deltaLeft = (groupRectRight - groupRectLeft) / 2
 
     const type = this.userformData[this.userFormId][pasteContainer].type
-    const container = type === 'Page' ? this.userformData[this.userFormId][this.getContainerList(pasteContainer)[0]].properties : this.userformData[this.userFormId][pasteContainer].properties
-    const containerHeight = type === 'Userform' ? container.Height! - 37 : container.Height!
+    const container = type === 'Page' ? usrFrmData[this.getContainerList(pasteContainer)[0]].properties : usrFrmData[pasteContainer].properties
+    const containerHeight = type === 'Userform' ? container.Height! - 37 : container.Height! - 20
     const targetTop = ((containerHeight) / 2) - deltaTop
     const targetLeft = (container.Width! / 2) - deltaLeft
 
-    const diffTop = targetTop - usrFrmData[topArray[0]].properties.Top!
-    const diffLeft = targetLeft - usrFrmData[leftArray[0]].properties.Left!
+    const diffTop = targetTop - usrFrmData[topArray[0]].properties.Top! + usrFrmData[pasteContainer].properties.ScrollTop!
+    const diffLeft = targetLeft - usrFrmData[leftArray[0]].properties.Left! + usrFrmData[pasteContainer].properties.ScrollLeft!
 
     for (let i = 0; i < leftArray.length; i++) {
       let left = usrFrmData[leftArray[i]].properties.Left! + diffLeft
       if (!isNaN(left)) {
-        this.updateControlProperty('Left', Math.abs(left), leftArray[i])
+        this.updateControlProperty('Left', left, leftArray[i])
       }
     }
     for (let i = 0; i < topArray.length; i++) {
       let top = usrFrmData[topArray[i]].properties.Top! + diffTop
       if (!isNaN(top)) {
-        this.updateControlProperty('Top', Math.abs(top), topArray[i])
+        this.updateControlProperty('Top', top, topArray[i])
       }
     }
   }
@@ -1236,6 +1238,7 @@ export default class ContextMenu extends FDCommonMethod {
         this.createGroup(control)
       }
     }
+    EventBus.$emit('afterPaste')
   }
 
   /**
@@ -1372,6 +1375,10 @@ export default class ContextMenu extends FDCommonMethod {
       }
     }
   }
+  convertToGridSize (val: number) {
+    const gridSize = 9
+    return Math.round(val / gridSize) * gridSize
+  }
   controlAlignMent (subVal: string) {
     const mainSel = this.selectedControls[this.userFormId].selected[0]
     const isGroup = mainSel.startsWith('group')
@@ -1407,6 +1414,22 @@ export default class ContextMenu extends FDCommonMethod {
     } else if (subVal === 'ID_BOTH') {
       this.updatePropVal('Height', newObject.Height!)
       this.updatePropVal('Width', newObject.Width!)
+    } else if (subVal === 'ID_GRID') {
+      const ctrlSel = this.selectedControls[this.userFormId].selected
+      for (let index = 0; index < ctrlSel.length; index++) {
+        if (!ctrlSel[index].startsWith('group')) {
+          const curProp = usrFrmData[ctrlSel[index]].properties
+          this.updateControlProperty('Left', this.convertToGridSize(curProp.Left!), ctrlSel[index])
+          this.updateControlProperty('Top', this.convertToGridSize(curProp.Top!), ctrlSel[index])
+        } else {
+          const groupIndex: number = this.groupStyleArray.findIndex(val => val.groupName === ctrlSel[index])
+          const curProp = this.groupStyleArray[groupIndex]
+          const left = parseInt(curProp.left!)
+          const top = parseInt(curProp.top!)
+          EventBus.$emit('updasteGroupSize', 'Top', this.convertToGridSize(top), groupIndex)
+          EventBus.$emit('updasteGroupSize', 'Left', this.convertToGridSize(left), groupIndex)
+        }
+      }
     }
   }
 
@@ -1451,12 +1474,9 @@ export default class ContextMenu extends FDCommonMethod {
   grid-template-columns: 10% 85% 5%;
 }
 .triangle-right {
-  width: 0;
-  height: 0;
-  border-top: 5px solid transparent;
+  border-top: 4px solid transparent;
   border-left: 5px solid black;
-  border-bottom: 5px solid transparent;
-  padding-top: 2px;
+  border-bottom: 4px solid transparent;
 }
 .iset-context {
   text-align: left;

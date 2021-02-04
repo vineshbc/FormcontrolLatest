@@ -1924,7 +1924,7 @@ export class PropertyListDefine {
         },
         ListWidth: {
           category: 'ID_CATEGORY_DATA',
-          type: 'number'
+          type: 'String'
         },
         Locked: {
           category: 'ID_CATEGORY_BEHAVIOR',

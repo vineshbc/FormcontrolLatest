@@ -56,6 +56,7 @@ import { controlProperties } from '@/FormDesigner/controls-properties'
 export default class FDScrollBar extends Mixins(FdControlVue) {
   $el: HTMLDivElement
   isInvert: boolean = false
+  intervalVariable: number = 0
   updateValueProperty (e: Event) {
     if (e.target instanceof HTMLInputElement) {
       const targetValue = parseInt(e.target!.value)
@@ -80,13 +81,12 @@ export default class FDScrollBar extends Mixins(FdControlVue) {
 
   @Watch('isEditMode')
   editModeValidate () {
-    let intervalVariable
     if (this.isEditMode) {
-      intervalVariable = setInterval(() => {
+      this.intervalVariable = setInterval(() => {
         this.isInvert = !this.isInvert
       }, 1000)
     } else {
-      clearInterval(intervalVariable)
+      clearInterval(this.intervalVariable)
     }
   }
   scrollReAlign () {

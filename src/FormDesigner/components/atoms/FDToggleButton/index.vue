@@ -22,7 +22,7 @@
     <img v-if="properties.Picture" id="img" :src="properties.Picture" :style="[imageProperty,imagePos]" ref="imageRef">
     <div v-if="!syncIsEditMode || isRunMode" :style="labelStyle" ref="textSpanRef">
       <span :style="spanStyleObj">{{ computedCaption.afterbeginCaption }}</span>
-          <span class="spanStyle" :style="spanStyleObj">{{
+          <span class="spanClass" :style="spanStyleObj">{{
             computedCaption.acceleratorCaption
           }}</span>
           <span :style="spanStyleObj">{{ computedCaption.beforeendCaption }}</span>
@@ -123,7 +123,7 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
    * @function styleObj
    *
    */
-  protected get styleObj (): Partial<CSSStyleDeclaration> {
+  protected get styleObj () {
     const controlProp = this.properties
     this.reverseStyle.justifyContent = 'center'
     if (!controlProp.Picture) {
@@ -196,7 +196,7 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold ? 'bold' : (font.FontStyle !== '') ? this.tempWeight : '',
       fontStretch: (font.FontStyle !== '') ? this.tempStretch : '',
       whiteSpace: controlProp.WordWrap ? 'pre-wrap' : 'pre',
@@ -307,48 +307,59 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
     }
   }
 
+   @Watch('properties.Enabled', {
+     deep: true
+   })
+  checkEnabled (newVal: boolean, oldVal: boolean) {
+    if (!this.properties.Enabled) {
+      this.imageProperty.filter = 'sepia(0) grayscale(1) blur(3px) opacity(0.2)'
+    } else {
+      this.imageProperty.filter = ''
+    }
+  }
   /**
    * @description updateAutoSize calls Vuex Actions to update object
    * @function updateAutoSize
    * @override
    */
-  updateAutoSize () {
-    if (this.properties.AutoSize === true) {
-      const imgStyle = {
-        width: 'fit-content',
-        height: 'fit-content'
-      }
-      this.imageProperty = imgStyle
-      if (this.properties.Picture) {
-        this.positionLogo(this.properties.PicturePosition)
-      }
-      this.$nextTick(() => {
-        const { width, height } = this.getWidthHeight()
-        this.updateDataModel({
-          propertyName: 'Height',
-          value: height + 5
-        })
-        this.updateDataModel({
-          propertyName: 'Width',
-          value: width
-        })
-      })
-    } else {
-      return undefined
-    }
-  }
+   updateAutoSize () {
+     if (this.properties.AutoSize === true) {
+       const imgStyle = {
+         width: 'fit-content',
+         height: 'fit-content',
+         filter: ''
+       }
+       this.imageProperty = imgStyle
+       if (this.properties.Picture) {
+         this.positionLogo(this.properties.PicturePosition)
+       }
+       this.$nextTick(() => {
+         const { width, height } = this.getWidthHeight()
+         this.updateDataModel({
+           propertyName: 'Height',
+           value: height + 5
+         })
+         this.updateDataModel({
+           propertyName: 'Width',
+           value: width
+         })
+       })
+     } else {
+       return undefined
+     }
+   }
 
-  /**
+   /**
    * @description mounted initializes the values which are required for the component
    */
-  mounted () {
-    this.$el.focus()
-    this.updateAutoSize()
-  }
-  releaseEditMode (event: KeyboardEvent) {
-    this.$el.focus()
-    this.setContentEditable(event, false)
-  }
+   mounted () {
+     this.$el.focus()
+     this.updateAutoSize()
+   }
+   releaseEditMode (event: KeyboardEvent) {
+     this.$el.focus()
+     this.setContentEditable(event, false)
+   }
 }
 </script>
 
@@ -365,6 +376,10 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
+}
+.spanClass {
+  text-decoration: underline;
+  text-decoration-skip-ink: none;
 }
 #logo{
  display: inline-flex;

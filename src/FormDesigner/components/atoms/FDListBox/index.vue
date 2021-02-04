@@ -248,7 +248,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
                         if (this.properties.ColumnCount !== -1) {
                           if (j === this.listBoxTableRef.children[0].children[0].children.length - 1) {
-                            headWidth.style.width = finalWidths[j] + 'px'
+                            headWidth.style.width = finalWidths[j] - 4 + 'px'
                           } else {
                             headWidth.style.width = '100px'
                           }
@@ -261,7 +261,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                   const width = this.listBoxTableRef.children[1].children[i].children[j] as HTMLDivElement
                   if (this.properties.ColumnCount! === -1) {
                     if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
-                      width.style.width = tempWidth + 'px'
+                      width.style.width = tempWidth - 4 + 'px'
                     }
                   } else if (j + 1 > this.properties.ColumnCount!) {
                     width.style.minWidth = '0px'
@@ -269,7 +269,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                   } else {
                     if (j < this.extraDatas.RowSourceData!.length) {
                       width.style.minWidth = '100px'
-                      width.style.width = tempWidth + 'px'
+                      width.style.width = tempWidth - 4 + 'px'
                     }
                   }
                 }
@@ -281,7 +281,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
                         if (this.properties.ColumnCount !== -1) {
                           if (j === this.listBoxTableRef.children[0].children[0].children.length - 1) {
-                            headWidth.style.width = finalWidths[j] + 'px'
+                            headWidth.style.width = finalWidths[j] - 4 + 'px'
                           } else {
                             headWidth.style.width = '100px'
                           }
@@ -297,7 +297,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                       width.style.width = '100px'
                     }
                   } else if (j === 1 && this.properties.ColumnCount! === 1) {
-                    width.style.width = this.properties.Width + 'px'
+                    width.style.width = this.properties.Width! - 4 + 'px'
                   } else if (j > this.properties.ColumnCount!) {
                     width.style.minWidth = '0px'
                     width.style.width = '0px'
@@ -324,13 +324,13 @@ export default class FDListBox extends Mixins(FdControlVue) {
                     width.style.display = 'inline-block'
                     if (this.properties.ColumnCount === 1) {
                       if (this.properties.Width! > finalWidths[0]) {
-                        width.style.width = this.properties.Width! + 'px'
+                        width.style.width = this.properties.Width! - 4 + 'px'
                       } else {
-                        width.style.width = finalWidths[0] + 'px'
+                        width.style.width = finalWidths[0] - 4 + 'px'
                       }
                     } else {
                       width.style.minWidth = '0px'
-                      width.style.width = finalWidths[j] + 'px'
+                      width.style.width = finalWidths[j] - 4 + 'px'
                     }
                   }
                   if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
@@ -338,19 +338,19 @@ export default class FDListBox extends Mixins(FdControlVue) {
                     if (this.properties.ColumnCount === -1) {
                       headWidth.style.display = 'inline-block'
                       headWidth.style.minWidth = '0px'
-                      headWidth.style.width = finalWidths[j] + 'px'
+                      headWidth.style.width = finalWidths[j] - 4 + 'px'
                     } else if (j >= this.properties.ColumnCount!) {
                       headWidth.style.display = 'none'
                     } else {
                       headWidth.style.display = 'inline-block'
                       if (this.properties.ColumnCount === 1) {
                         if (this.properties.Width! > finalWidths[0]) {
-                          headWidth.style.width = this.properties.Width! + 'px'
+                          headWidth.style.width = this.properties.Width! - 4 + 'px'
                         } else {
-                          headWidth.style.width = finalWidths[0] + 'px'
+                          headWidth.style.width = finalWidths[0] - 4 + 'px'
                         }
                       } else {
-                        headWidth.style.width = finalWidths[j] + 'px'
+                        headWidth.style.width = finalWidths[j] - 4 + 'px'
                       }
                     }
                   }
@@ -365,13 +365,13 @@ export default class FDListBox extends Mixins(FdControlVue) {
                       width.style.display = 'inline-block'
                       if (this.properties.ColumnCount === 1) {
                         if (this.properties.Width! > finalWidths[0]) {
-                          width.style.width = this.properties.Width! + 'px'
+                          width.style.width = this.properties.Width! - 4 + 'px'
                         } else {
-                          width.style.width = finalWidths[0] + 'px'
+                          width.style.width = finalWidths[0] - 4 + 'px'
                         }
                       } else {
                         width.style.minWidth = '0px'
-                        width.style.width = finalWidths[j - 1] + 'px'
+                        width.style.width = finalWidths[j - 1] - 4 + 'px'
                       }
                     }
                     if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
@@ -379,19 +379,19 @@ export default class FDListBox extends Mixins(FdControlVue) {
                       if (this.properties.ColumnCount === -1) {
                         headWidth.style.display = 'inline-block'
                         headWidth.style.minWidth = '0px'
-                        headWidth.style.width = finalWidths[j] + 'px'
+                        headWidth.style.width = finalWidths[j] - 4 + 'px'
                       } else if (j >= this.properties.ColumnCount!) {
                         headWidth.style.display = 'none'
                       } else {
                         headWidth.style.display = 'inline-block'
                         if (this.properties.ColumnCount === 1) {
                           if (this.properties.Width! > finalWidths[0]) {
-                            headWidth.style.width = this.properties.Width! + 'px'
+                            headWidth.style.width = this.properties.Width! - 4 + 'px'
                           } else {
-                            headWidth.style.width = finalWidths[0] + 'px'
+                            headWidth.style.width = finalWidths[0] - 4 + 'px'
                           }
                         } else {
-                          headWidth.style.width = finalWidths[j] + 'px'
+                          headWidth.style.width = finalWidths[j] - 4 + 'px'
                         }
                       }
                     }
@@ -428,7 +428,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                   const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
                   if (this.properties.ColumnCount! === -1) {
                     if (j >= 0 && j < this.extraDatas.RowSourceData!.length) {
-                      width.style.width = tempWidth + 'px'
+                      width.style.width = tempWidth - 4 + 'px'
                     }
                   } else if (j + 1 > this.properties.ColumnCount!) {
                     width.style.minWidth = '0px'
@@ -436,7 +436,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                   } else {
                     if (j < this.extraDatas.RowSourceData!.length) {
                       width.style.minWidth = '100px'
-                      width.style.width = tempWidth + 'px'
+                      width.style.width = tempWidth - 4 + 'px'
                     }
                   }
                 }
@@ -448,7 +448,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                       width.style.width = '100px'
                     }
                   } else if (j === 1 && this.properties.ColumnCount! === 1) {
-                    width.style.width = this.properties.Width + 'px'
+                    width.style.width = this.properties.Width! - 4 + 'px'
                   } else if (j > this.properties.ColumnCount!) {
                     width.style.minWidth = '0px'
                     width.style.width = '0px'
@@ -475,13 +475,13 @@ export default class FDListBox extends Mixins(FdControlVue) {
                     width.style.display = 'inline-block'
                     if (this.properties.ColumnCount === 1) {
                       if (this.properties.Width! > finalWidths[0]) {
-                        width.style.width = this.properties.Width! + 'px'
+                        width.style.width = this.properties.Width! - 4 + 'px'
                       } else {
-                        width.style.width = finalWidths[0] + 'px'
+                        width.style.width = finalWidths[0] - 4 + 'px'
                       }
                     } else {
                       width.style.minWidth = '0px'
-                      width.style.width = finalWidths[j] + 'px'
+                      width.style.width = finalWidths[j] - 4 + 'px'
                     }
                   }
                 }
@@ -495,13 +495,13 @@ export default class FDListBox extends Mixins(FdControlVue) {
                       width.style.display = 'inline-block'
                       if (this.properties.ColumnCount === 1) {
                         if (this.properties.Width! > finalWidths[0]) {
-                          width.style.width = this.properties.Width! + 'px'
+                          width.style.width = this.properties.Width! - 4 + 'px'
                         } else {
-                          width.style.width = finalWidths[0] + 'px'
+                          width.style.width = finalWidths[0] - 4 + 'px'
                         }
                       } else {
                         width.style.minWidth = '0px'
-                        width.style.width = finalWidths[j - 1] + 'px'
+                        width.style.width = finalWidths[j - 1] - 4 + 'px'
                       }
                     }
                   }
@@ -841,7 +841,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold
         ? 'bold'
         : font.FontStyle !== ''
@@ -856,7 +856,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
    * dynamically changing the styles of the component based on properties
    * @function tableStyleObj
    */
-  protected get tableStyleObj (): Partial<CSSStyleDeclaration> {
+  protected get tableStyleObj () {
     const controlProp = this.properties
     const font: font = controlProp.Font
       ? controlProp.Font
@@ -883,7 +883,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold
         ? 'bold'
         : font.FontStyle !== ''

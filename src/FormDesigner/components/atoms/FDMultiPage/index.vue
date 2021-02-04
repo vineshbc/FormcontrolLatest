@@ -5,10 +5,6 @@
       :style="pageStyleObj"
       :title="properties.ControlTipText"
       @mousedown="multiPageMouseDown"
-      @click.stop="
-        !isEditMode ? selectedItem : addControlObj($event, selectedPageID)
-      "
-      @mouseup="dragSelectorControl($event)"
       @contextmenu.stop="handleContextMenu"
       @keydown.delete.stop.exact="deleteMultiPage"
       @keyup.stop="selectMultipleCtrl($event, false)"
@@ -57,7 +53,6 @@
           :style="styleContentObj"
           ref="contentRef"
           :title="properties.ControlTipText"
-          @scroll="updateScrollingLeftTop"
         >
           <div
             v-if="controls.includes(selectedPageID)"
@@ -78,11 +73,20 @@
               :controlId="selectedPageID"
               :containerId="selectedPageID"
               :isEditMode="isEditMode"
+              :getScrollBarX="getScrollBarPage.overflowX"
+              :getScrollBarY="getScrollBarPage.overflowY"
               :title="properties.ControlTipText"
               :width="properties.Width"
               :height="properties.Height"
               :getSampleDotPattern="getSampleDotPattern"
               ref="containerRef"
+              :createBackgroundString="getPicture"
+              :getSizeMode="getSizeMode"
+              :getRepeatData="getRepeatData"
+              :getPosition="getPosition"
+             @deActiveControl="deActControl"
+             @dragSelectorControl="dragSelectorControl"
+             @addControlObj="addContainerControl"
             />
           </div>
         </div>
@@ -97,8 +101,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Ref, Watch } from 'vue-property-decorator'
-import { State } from 'vuex-class'
+import { Component, Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
+import { State, Action } from 'vuex-class'
 import FdContainerVue from '@/api/abstract/FormDesigner/FdContainerVue'
 import { controlProperties } from '@/FormDesigner/controls-properties'
 import ContextMenu from '../FDContextMenu/index.vue'
@@ -117,9 +121,8 @@ import { EventBus } from '@/FormDesigner/event-bus'
       import('@/FormDesigner/components/organisms/FDContainer/index.vue')
   }
 })
-export default class FDMultiPage extends FdContainerVue {
+export default class FDMultiPage extends Mixins(FdContainerVue) {
   @State((state) => state.fd.userformData) userformData!: userformData;
-  @Prop() isEditMode: boolean;
   @Prop({ required: true, type: String }) public userFormId!: string;
   @Ref('scrolling') scrolling: HTMLDivElement;
   @Ref('contentRef') contentRef: HTMLDivElement;
@@ -141,20 +144,9 @@ export default class FDMultiPage extends FdContainerVue {
   multiRowCount: number = 1;
   isScrollVisible = false;
   topValue: number = 0;
+  widthValue: number = 40;
+  rowsCount: string = '';
 
-  @Watch('selectedPageData.properties.ScrollLeft')
-  updateScrollLeft () {
-    if (this.selectedPageData) {
-      this.scrollLeftTop(this.selectedPageData!)
-    }
-  }
-
-  @Watch('selectedPageData.properties.ScrollTop')
-  updateScrollTop () {
-    if (this.selectedPageData) {
-      this.scrollLeftTop(this.selectedPageData!)
-    }
-  }
   /**
    * @description sets scrollbar left and top position
    * @function scrollLeftTop
@@ -196,7 +188,7 @@ export default class FDMultiPage extends FdContainerVue {
   get outerDivStyleObj () {
     return {
       width: `${this.properties.Width!}px`,
-      height: `${this.properties.Width!}px`
+      height: `${this.properties.Height!}px`
     }
   }
   /**
@@ -254,7 +246,10 @@ export default class FDMultiPage extends FdContainerVue {
       float: controlProp.TabOrientation === 3 ? 'right' : '',
       whiteSpace: controlProp.MultiRow === true ? 'break-spaces' : 'nowrap',
       zIndex: controlProp.MultiRow === true ? '100' : '',
-      display: controlProp.Style === 2 ? 'none' : 'inline-block',
+      direction: (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'rtl' : 'ltr',
+      display: controlProp.Style === 2 ? 'none' : (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'grid' : 'inline-block',
+      gridAutoFlow: (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'column' : '',
+      gridTemplateRows: (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? this.rowsCount : '',
       height:
         controlProp.TabOrientation === 2 || controlProp.TabOrientation === 3
           ? this.isScrollVisible
@@ -267,7 +262,8 @@ export default class FDMultiPage extends FdContainerVue {
           : !this.isScrollVisible
             ? `${controlProp.Width}px`
             : `${controlProp.Width! - 60}px`,
-      overflow: 'hidden'
+      overflow: 'hidden',
+      gridAutoColumns: (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'max-content' : ''
     }
   }
 
@@ -285,18 +281,8 @@ export default class FDMultiPage extends FdContainerVue {
       return {
         width: '100%',
         height: '100%',
-        position: 'relative',
-        backgroundImage: `url(${this.selectedPageData.properties.Picture})`,
-        backgroundSize:
-          this.selectedPageData.properties.Picture === ''
-            ? ''
-            : this.getSizeMode,
-        backgroundRepeat: this.getRepeatData,
-        backgroundPosition:
-          this.selectedPageData.properties.Picture === ''
-            ? ''
-            : this.getPosition,
-        zoom: zoomVal + ''
+        position: 'relative'
+        // zoom: zoomVal + ''
       }
     }
   }
@@ -418,6 +404,7 @@ export default class FDMultiPage extends FdContainerVue {
       }
       this.setScrollLeft()
       this.scrollDisabledValidate()
+      this.updateMultiRowforLeftAndRight()
     })
   }
 
@@ -557,10 +544,10 @@ export default class FDMultiPage extends FdContainerVue {
         controlProp.TabOrientation === 0 || controlProp.TabOrientation === 1
           ? 'inline-block'
           : 'block',
-      height:
-        controlProp.TabFixedHeight! > 0
-          ? `${controlProp.TabFixedHeight! + 10}px`
-          : ''
+      cursor:
+        controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
+          ? this.getMouseCursorData
+          : 'default'
     }
   }
 
@@ -592,16 +579,22 @@ export default class FDMultiPage extends FdContainerVue {
    */
   protected get styleContentObj (): Partial<CSSStyleDeclaration> {
     const controlProp = this.properties
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
     return {
       position: 'absolute',
       display:
-        controlProp.Height! < controlProp.TabFixedHeight!
+      controlProp.MultiRow ? 'block' : controlProp.Height! < controlProp.TabFixedHeight!
+        ? 'none'
+        : controlProp.Width! < controlProp.TabFixedWidth!
           ? 'none'
-          : controlProp.Width! < controlProp.TabFixedWidth!
+          : controlProp.Width! < 30 || controlProp.Height! < 30
             ? 'none'
-            : controlProp.Width! < 30 || controlProp.Height! < 30
-              ? 'none'
-              : 'block',
+            : controlProp.TabOrientation === 3 ? controlProp.Width! < (this.widthValue + 12) ? 'none' : 'block' : 'block',
       top:
         controlProp.Style !== 2
           ? controlProp.Style === 1
@@ -665,18 +658,18 @@ export default class FDMultiPage extends FdContainerVue {
             : controlProp.TabOrientation === 0 || controlProp.TabOrientation === 1
               ? `${controlProp.Width! - 3}px`
               : controlProp.TabFixedWidth! > 0
-                ? controlProp.Width! - controlProp.TabFixedWidth! - 10 + 'px'
+                ? controlProp.TabOrientation === 3 ? (controlProp.Width! - this.widthValue) + 'px' : controlProp.Width! - controlProp.TabFixedWidth! - 10 + 'px'
                 : controlProp.TabFixedWidth! === 0
                   ? controlProp.TabOrientation === 2 ||
               controlProp.TabOrientation === 3
-                    ? `${controlProp.Width! - this.tempWidth - 13}px`
+                    ? controlProp.MultiRow ? (controlProp.Width! - this.widthValue) + 'px' : `${controlProp.Width! - this.tempWidth - 13}px`
                     : controlProp.Width! - controlProp.Font!.FontSize! - 20 + 'px'
                   : 'calc(100% - 44px)'
           : `${controlProp.Width! - 3}px`,
       left:
         controlProp.Style !== 2
           ? controlProp.Style === 1 ? controlProp.TabOrientation === 2
-            ? controlProp.TabFixedWidth! > 0
+            ? controlProp.MultiRow ? this.widthValue + 'px' : controlProp.TabFixedWidth! > 0
               ? controlProp.TabFixedWidth! + 13 + 'px'
               : controlProp.TabFixedWidth! === 0
                 ? controlProp.TabOrientation === 2 ||
@@ -686,7 +679,7 @@ export default class FDMultiPage extends FdContainerVue {
                 : '43px'
             : '3px'
             : controlProp.TabOrientation === 2
-              ? controlProp.TabFixedWidth! > 0
+              ? controlProp.MultiRow ? this.widthValue + 'px' : controlProp.TabFixedWidth! > 0
                 ? controlProp.TabFixedWidth! + 12 + 'px'
                 : controlProp.TabFixedWidth! === 0
                   ? controlProp.TabOrientation === 2 ||
@@ -696,14 +689,7 @@ export default class FDMultiPage extends FdContainerVue {
                   : '40px'
               : '0px'
           : '0px',
-      padding: '0px',
-      // overflow: 'hidden',
-      overflowX: this.getScrollBarPage ? this.getScrollBarPage.overflowX! : '',
-      overflowY: this.getScrollBarPage ? this.getScrollBarPage.overflowY! : '',
-      backgroundColor: 'rgb(238,238,238)',
-      // backgroundImage:
-      //   'radial-gradient(circle, rgb(0, 0, 0) 0.5px, rgba(0, 0, 0, 0) 0.2px) !important',
-      // backgroundSize: '9px 10px',
+      padding: controlProp.MultiRow ? '0px' : '0px',
       boxShadow:
         controlProp.TabOrientation === 0 ? '1px 0px gray' : '1px 1px gray'
     }
@@ -713,7 +699,7 @@ export default class FDMultiPage extends FdContainerVue {
    * @function getSampleDotPattern
    */
   protected get getSampleDotPattern () {
-    const dotSize = 10
+    const dotSize = 13
     const dotSpace = 9
     return {
       backgroundPosition: `${dotSize}px ${dotSize}px`,
@@ -788,6 +774,39 @@ export default class FDMultiPage extends FdContainerVue {
     }
   }
 
+  updateMultiRowforLeftAndRight () {
+    if (this.properties.MultiRow) {
+      this.rowsCount = ''
+      if (this.properties.TabOrientation === 2 || this.properties.TabOrientation === 3) {
+        const totalHeight = this.properties.Height!
+        this.widthValue = this.scrolling.clientWidth
+        const k = this.properties.Value
+        let sum = 0
+        let count = this.scrolling.children.length
+        const a = this.scrolling.children[0].children[0].children[1].clientHeight + 5 + 'px'
+        for (let i = 0; i < this.scrolling.children.length; i++) {
+          sum += (this.scrolling.children[i].children[0].children[1].clientHeight + 5)
+        }
+        if (totalHeight < sum) {
+          count = totalHeight / (this.scrolling.children[0].children[0].children[1].clientHeight + 5)
+        }
+        if (count < this.scrolling.children.length) {
+          for (let j = 0; j < Math.trunc(count); j++) {
+            this.rowsCount = this.rowsCount + (parseInt(a) + 5 + 'px') + ' '
+          }
+        } else {
+          for (let j = 0; j < Math.trunc(count); j++) {
+            if (j === k) {
+              this.rowsCount = this.rowsCount + (parseInt(a) + 5 + 'px') + ' '
+            } else {
+              this.rowsCount = this.rowsCount + a + ' '
+            }
+          }
+        }
+      }
+    }
+  }
+
   /**
    * @description watches changes in propControlData to set autoset when true
    * @function isScrollUsed
@@ -798,9 +817,12 @@ export default class FDMultiPage extends FdContainerVue {
   isScrollUsed (newVal: number, oldVal: number) {
     this.scrollDisabledValidate()
     if (this.properties.MultiRow) {
+      this.updateMultiRowforLeftAndRight()
+      this.widthValue = this.scrolling.clientWidth
       if (this.scrolling) {
         Vue.nextTick(() => {
-          this.topValue = this.scrolling.offsetHeight!
+          this.topValue = this.scrolling.offsetHeight
+          this.widthValue = this.scrolling.clientWidth
         })
       }
       const initialLength = this.controls.length!
@@ -836,8 +858,13 @@ export default class FDMultiPage extends FdContainerVue {
   orientValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    this.widthValue = this.scrolling.clientWidth
     if (this.scrolling) {
-      this.topValue = this.scrolling.offsetHeight
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
     }
   }
 
@@ -845,24 +872,53 @@ export default class FDMultiPage extends FdContainerVue {
   heightValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   @Watch('properties.TabFixedWidth')
   tabFixedWidthValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   @Watch('properties.TabFixedHeight')
   tabFixedHeightValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   @Watch('properties.MultiRow')
   multiRowValidate () {
+    this.updateMultiRowforLeftAndRight()
     if (this.scrolling) {
-      this.topValue = this.scrolling.offsetHeight
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
     }
   }
 
@@ -877,6 +933,20 @@ export default class FDMultiPage extends FdContainerVue {
     this.calculateWidthHeight()
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
+  }
+
+  @Watch('topValue')
+  topValueValidate () {
+    this.topValue = this.scrolling.offsetHeight
   }
 
   /**
@@ -894,6 +964,14 @@ export default class FDMultiPage extends FdContainerVue {
     this.calculateWidthHeight()
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   setScrollLeft () {
@@ -953,9 +1031,11 @@ export default class FDMultiPage extends FdContainerVue {
       this.calSelectedAreaStyle(event, this.selectedPageData)
     }
   }
+  deActControl (event: MouseEvent) {
+    this.multiPageMouseDown(event)
+  }
 
   multiPageMouseDown (e: MouseEvent) {
-    EventBus.$emit('isEditMode', this.isEditMode)
     this.selectedItem(e)
     if (this.selMultipleCtrl === false && this.activateCtrl === false) {
       const selContainer = this.selectedControls[this.userFormId].container[0]
@@ -1085,7 +1165,14 @@ export default class FDMultiPage extends FdContainerVue {
   @Watch('properties.Value')
   valueValidate () {
     this.focusPage()
+    this.updateMultiRowforLeftAndRight()
     let sum = 0
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
     Vue.nextTick(() => {
       if (this.properties.TabOrientation === 0 || this.properties.TabOrientation === 1) {
         for (let i = 0; i < this.properties.Value!; i++) {
@@ -1148,6 +1235,18 @@ export default class FDMultiPage extends FdContainerVue {
       }
       this.focusPage()
     })
+  }
+  addContainerControl (event: MouseEvent) {
+    if (!this.isEditMode) {
+      this.selectedItem(event)
+    } else {
+      this.addControlObj(event, this.selectedPageID)
+    }
+  }
+  get getPicture () {
+    if (this.selectedPageData) {
+      return `url(${this.selectedPageData.properties!.Picture!})`
+    }
   }
 }
 </script>

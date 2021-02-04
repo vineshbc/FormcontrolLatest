@@ -113,6 +113,8 @@ export default class FDTabStrip extends FdControlVue {
   multiRowCount: number = 1;
   isScrollVisible: boolean = false;
   topValue: number = 0;
+  widthValue: number = 40;
+  rowsCount: string = '';
   rightClickSelect (value: number) {
     this.updateDataModel({ propertyName: 'Value', value: value })
   }
@@ -280,7 +282,10 @@ export default class FDTabStrip extends FdControlVue {
     }
     return {
       ...bottomTopStyle,
-      display: controlProp.Style === 2 ? 'none' : 'inline-block',
+      direction: (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'rtl' : 'ltr',
+      display: controlProp.Style === 2 ? 'none' : (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'grid' : 'inline-block',
+      gridAutoFlow: (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'column' : '',
+      gridTemplateRows: (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? this.rowsCount : '',
       alignSelf: controlProp.TabOrientation === 1 ? 'flex-end' : '',
       marginTop:
         controlProp.TabOrientation === 1
@@ -301,7 +306,8 @@ export default class FDTabStrip extends FdControlVue {
             ? `${controlProp.Width! - 62}px`
             : `${controlProp.Width!}px`,
       float: controlProp.TabOrientation === 3 ? 'right' : '',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      gridAutoColumns: (controlProp.MultiRow && controlProp.TabOrientation === 2) || (controlProp.MultiRow && controlProp.TabOrientation === 3) ? 'max-content' : ''
     }
   }
 
@@ -400,6 +406,7 @@ export default class FDTabStrip extends FdControlVue {
       }
       this.setScrollLeft()
       this.scrollDisabledValidate()
+      this.updateMultiRowforLeftAndRight()
     })
   }
 
@@ -407,20 +414,77 @@ export default class FDTabStrip extends FdControlVue {
   heightValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   @Watch('properties.TabFixedWidth')
   tabFixedWidthValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   @Watch('properties.TabFixedHeight')
   tabFixedHeightValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
+  updateMultiRowforLeftAndRight () {
+    if (this.properties.MultiRow) {
+      this.rowsCount = ''
+      if (this.properties.TabOrientation === 2 || this.properties.TabOrientation === 3) {
+        const totalHeight = this.properties.Height!
+        this.widthValue = this.scrolling.clientWidth
+        const k = this.properties.Value
+        let sum = 0
+        let count = this.scrolling.children.length
+        const a = this.scrolling.children[0].children[0].children[1].clientHeight + 5 + 'px'
+        for (let i = 0; i < this.scrolling.children.length; i++) {
+          sum += (this.scrolling.children[i].children[0].children[1].clientHeight + 5)
+        }
+        if (totalHeight < sum) {
+          count = totalHeight / (this.scrolling.children[0].children[0].children[1].clientHeight + 5)
+        }
+        if (count < this.scrolling.children.length) {
+          for (let j = 0; j < Math.trunc(count); j++) {
+            this.rowsCount = this.rowsCount + (parseInt(a) + 5 + 'px') + ' '
+          }
+        } else {
+          for (let j = 0; j < Math.trunc(count); j++) {
+            if (j === k) {
+              this.rowsCount = this.rowsCount + (parseInt(a) + 5 + 'px') + ' '
+            } else {
+              this.rowsCount = this.rowsCount + a + ' '
+            }
+          }
+        }
+      }
+    }
+  }
   /**
    * @description style object is passed to :style attribute in div tag
    * dynamically changing the styles of the component based on propControlData
@@ -470,6 +534,12 @@ export default class FDTabStrip extends FdControlVue {
    */
   protected get styleContentObj (): Partial<CSSStyleDeclaration> {
     const controlProp = this.properties
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
     return {
       position: 'absolute',
       zIndex: '10000',
@@ -478,7 +548,7 @@ export default class FDTabStrip extends FdControlVue {
           ? 'none'
           : controlProp.Width! < 30 || controlProp.Height! < 30
             ? 'none'
-            : 'block',
+            : controlProp.TabOrientation === 3 ? controlProp.Width! < this.widthValue ? 'none' : 'block' : 'block',
       top:
         controlProp.TabOrientation === 0
           ? controlProp.MultiRow
@@ -509,15 +579,16 @@ export default class FDTabStrip extends FdControlVue {
         controlProp.TabOrientation === 0 || controlProp.TabOrientation === 1
           ? `${controlProp.Width! - 3}px`
           : controlProp.TabFixedWidth! > 0
-            ? controlProp.Width! - controlProp.TabFixedWidth! - 15 + 'px'
+            ? controlProp.MultiRow ? (controlProp.Width! > this.widthValue) ? (controlProp.Width! - this.widthValue) + 'px' : '0px'
+              : controlProp.TabOrientation === 3 ? (controlProp.Width! - this.widthValue) + 'px' : controlProp.Width! - controlProp.TabFixedWidth! - 15 + 'px'
             : controlProp.TabFixedWidth! === 0
               ? controlProp.TabOrientation === 2 || controlProp.TabOrientation === 3
-                ? `${controlProp.Width! - this.tempWidth - 13}px`
+                ? controlProp.MultiRow ? (controlProp.Width! > this.widthValue) ? (controlProp.Width! - this.widthValue) + 'px' : '0px' : `${controlProp.Width! - this.tempWidth - 13}px`
                 : controlProp.Width! - controlProp.Font!.FontSize! - 20 + 'px'
               : `${controlProp.Width! - 34}px`,
       left:
         controlProp.TabOrientation === 2
-          ? controlProp.TabFixedWidth! > 0
+          ? controlProp.MultiRow ? this.widthValue + 'px' : controlProp.TabFixedWidth! > 0
             ? controlProp.TabFixedWidth! + 12 + 'px'
             : controlProp.TabFixedWidth! === 0
               ? controlProp.TabOrientation === 2 ||
@@ -581,11 +652,13 @@ export default class FDTabStrip extends FdControlVue {
   @Watch('properties.Width')
   isScrollUsed (newVal: controlData, oldVal: controlData) {
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
     this.tempScrollWidth = this.scrolling.offsetWidth!
     if (this.properties.MultiRow) {
       if (this.scrolling) {
         Vue.nextTick(() => {
           this.topValue = this.scrolling.offsetHeight!
+          this.widthValue = this.scrolling.clientWidth
         })
       }
       const initialLength = this.extraDatas.Tabs!.length!
@@ -612,15 +685,24 @@ export default class FDTabStrip extends FdControlVue {
   orientValidate () {
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    this.widthValue = this.scrolling.clientWidth
     if (this.scrolling) {
-      this.topValue = this.scrolling.offsetHeight
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
     }
   }
 
   @Watch('properties.MultiRow')
   multiRowValidate () {
+    this.updateMultiRowforLeftAndRight()
     if (this.scrolling) {
-      this.topValue = this.scrolling.offsetHeight
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
     }
   }
   mounted () {
@@ -640,6 +722,15 @@ export default class FDTabStrip extends FdControlVue {
     this.calculateWidthHeight()
     this.scrollButtonVerify()
     this.scrollDisabledValidate()
+    this.updateMultiRowforLeftAndRight()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   /**
@@ -656,6 +747,14 @@ export default class FDTabStrip extends FdControlVue {
     }
     this.calculateWidthHeight()
     this.scrollButtonVerify()
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! + 1 })
+        this.updateDataModel({ propertyName: 'Height', value: this.properties.Height! - 1 })
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
   }
 
   get selectedTabData () {
@@ -782,7 +881,14 @@ export default class FDTabStrip extends FdControlVue {
   @Watch('properties.Value')
   valueValidate () {
     this.focusPage()
+    this.updateMultiRowforLeftAndRight()
     let sum = 0
+    if (this.scrolling) {
+      Vue.nextTick(() => {
+        this.topValue = this.scrolling.offsetHeight!
+        this.widthValue = this.scrolling.clientWidth
+      })
+    }
     Vue.nextTick(() => {
       if (this.properties.TabOrientation === 0 || this.properties.TabOrientation === 1) {
         for (let i = 0; i < this.properties.Value!; i++) {

@@ -69,18 +69,13 @@
 </template>
 
 <script lang="ts">
-import FdControlVue from '@/api/abstract/FormDesigner/FdControlVue'
 import { controlProperties } from '@/FormDesigner/controls-properties'
 import {
   Component,
   Prop,
-  Model,
   Vue,
-  Emit,
-  Ref,
-  Watch
+  Emit
 } from 'vue-property-decorator'
-import { State } from 'vuex-class'
 
 @Component({
   name: 'FDControlTabs',
@@ -215,7 +210,7 @@ export default class FDControlTabs extends Vue {
    * @function styleLabelObj
    *
    */
-  protected get styleLabelObj (): Partial<CSSStyleDeclaration> {
+  protected get styleLabelObj () {
     const controlProp = this.data.properties
     const font: font = controlProp.Font
       ? controlProp.Font
@@ -251,7 +246,7 @@ export default class FDControlTabs extends Vue {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
-      textUnderlinePosition: 'under',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold
         ? 'bold'
         : font.FontStyle !== ''
@@ -262,7 +257,7 @@ export default class FDControlTabs extends Vue {
         controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
           ? this.getMouseCursorData
           : 'default',
-      zIndex: controlProp.MultiRow ? '30000' : '',
+      zIndex: controlProp.MultiRow && controlProp.TabOrientation !== 3 ? '30000' : '',
       backgroundColor:
         this.indexValue === this.data.properties.Value!
           ? controlProp.Style === 1

@@ -184,6 +184,7 @@ export default class FDTextBox extends Mixins(FdControlVue) {
             : font.FontStrikethrough
               ? 'line-through'
               : '',
+      textDecorationSkipInk: 'none',
       fontWeight: font.FontBold ? 'bold' : (font.FontStyle !== '') ? this.tempWeight : '',
       fontStretch: (font.FontStyle !== '') ? this.tempStretch : '',
       display: controlProp.Visible ? 'block' : 'none',
@@ -407,6 +408,9 @@ export default class FDTextBox extends Mixins(FdControlVue) {
 
   @Watch('properties.MultiLine')
   multiLineValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
     if (this.textareaRef) {
       this.originalText = this.textareaRef.value
       this.trimmedText = this.originalText.replace(/(\r\n|\n|\r)/gm, '¶')
@@ -430,6 +434,8 @@ export default class FDTextBox extends Mixins(FdControlVue) {
         // replication of stype attribute to Label tag for autoSize property to work
         let tempLabel: HTMLLabelElement = this.autoSizeTextarea
         tempLabel.style.display = 'inline'
+        tempLabel.style.fontFamily = textareaRef.style.fontFamily
+        tempLabel.style.fontStretch = textareaRef.style.fontStretch
         tempLabel.style.fontStyle = textareaRef.style.fontStyle
         tempLabel.style.fontSize =
             parseInt(textareaRef.style.fontSize) + 'px'
@@ -439,13 +445,20 @@ export default class FDTextBox extends Mixins(FdControlVue) {
         tempLabel.style.width = textareaRef.style.width
         tempLabel.style.height = textareaRef.style.height
         tempLabel.innerText = textareaRef.value
-        this.updateDataModel({
-          propertyName: 'Width',
-          value: tempLabel.offsetWidth + 5
-        })
+        if (this.properties.MultiLine) {
+          this.updateDataModel({
+            propertyName: 'Width',
+            value: tempLabel.offsetWidth
+          })
+        } else {
+          this.updateDataModel({
+            propertyName: 'Width',
+            value: tempLabel.offsetWidth + 7
+          })
+        }
         this.updateDataModel({
           propertyName: 'Height',
-          value: tempLabel.offsetHeight + 5
+          value: tempLabel.offsetHeight + 15
         })
         tempLabel.innerText = ''
         tempLabel.style.display = 'none'
@@ -602,6 +615,30 @@ export default class FDTextBox extends Mixins(FdControlVue) {
     const eventStop = (event: Event) => event.stopPropagation()
     return this.isEditMode === false ? null : {
       keydown: eventStop
+    }
+  }
+  @Watch('properties.TextAlign')
+  textAlignValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.ScrollBars')
+  scrollBarValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.Enabled')
+  enabledValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
+    }
+  }
+  @Watch('properties.SelectionMargin')
+  selectionMarginValidate () {
+    if (this.properties.AutoSize) {
+      this.updateAutoSize()
     }
   }
   textBoxClick (event: MouseEvent) {

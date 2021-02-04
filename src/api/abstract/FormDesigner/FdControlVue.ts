@@ -42,7 +42,9 @@ export default class FdControlVue extends Vue {
     width: ''
   }
   imageProperty={
-    height: 'fit-content'
+    height: 'fit-content',
+    width: '',
+    filter: ''
   }
   imagePos={
     alignSelf: ''
@@ -260,10 +262,8 @@ export default class FdControlVue extends Vue {
    */
   protected get getScrollBarY (): string {
     if (this.data.type === 'TextBox') {
-      if (this.isEditMode) {
-        const scrollYData = controlProperties.scrollBarTextBoxProp(this.data)
-        return scrollYData.overflowY
-      }
+      const scrollYData = controlProperties.scrollBarTextBoxProp(this.data)
+      return scrollYData.overflowY
     }
     const scrollY: ScrollBarData = controlProperties.scrollBarProp(
       this.data
@@ -1418,7 +1418,8 @@ positionLogo (value:any) {
     position: '',
     display: 'inline-flex',
     width: '',
-    justifyContent: ''
+    justifyContent: '',
+    overflow: ''
   }
   this.reverseStyle = {
     display: '',
@@ -1460,14 +1461,17 @@ positionLogo (value:any) {
       break
     case 9: this.reverseStyle.display = 'grid'
       style.order = -1
+      style.overflow = 'hidden'
       break
     case 10: this.reverseStyle.display = 'grid'
       this.reverseStyle.justifyItems = 'center'
       style.order = -1
+      style.overflow = 'hidden'
       break
     case 11: this.reverseStyle.display = 'grid'
       this.reverseStyle.justifyItems = 'end'
       style.order = -1
+      style.overflow = 'hidden'
       break
     case 12: this.reverseStyle.position = 'relative'
       this.reverseStyle.width = '100%'
@@ -1491,7 +1495,6 @@ pictureSize () {
   }
   if (this.properties.Picture) {
     Vue.nextTick(() => {
-      // const imgProp = document.getElementById('img')
       imgStyle.width = this.properties.Width! <= this.imageRef!.naturalWidth ? `${this.properties.Width}px` : 'fit-content'
       imgStyle.height = this.properties.Height! <= this.imageRef!.naturalHeight ? `${this.properties.Height}px` : 'fit-content'
       if (this.properties.PicturePosition === 9 || this.properties.PicturePosition === 10 || this.properties.PicturePosition === 11) {
@@ -1505,7 +1508,8 @@ pictureSize () {
 onPictureLoad () {
   const imgStyle = {
     width: 'auto',
-    height: 'auto'
+    height: 'auto',
+    filter: ''
   }
   this.imageProperty = imgStyle
   this.pictureSize()
@@ -1565,7 +1569,11 @@ getWidthHeight () {
     widthHeightData.height = labelHeight
   }
   if (this.checkForWidthIncrease(controlWidthIncrease)) {
-    widthHeightData.width = widthHeightData.width + 15
+    if (this.properties.Picture) {
+      widthHeightData.width = widthHeightData.width + 20
+    } else {
+      widthHeightData.width = widthHeightData.width + 15
+    }
   } else if (this.properties.WordWrap) {
     widthHeightData.width = (((widthHeightData.width + 20) < componentRef!.clientWidth) || (imgWidth > componentRef!.clientWidth)) ? widthHeightData.width : componentRef!.clientWidth
   }
@@ -1583,7 +1591,7 @@ checkForWidthIncrease (controlArr:Array<string>) {
 setHeightWidthVariable () {
   const picPosLeftRight = [0, 1, 2, 3, 4, 5]
   const picPosTopBottom = [6, 7, 8, 9, 10, 11]
-  const controlWidthIncrease = ['optionbutton', 'checkbox']
+  const controlWidthIncrease = ['optionbutton', 'checkbox', 'commandbutton', 'togglebutton']
   const imgHeight = this.imageRef && this.imageRef.naturalHeight
   const imgWidth = this.imageRef && this.imageRef.naturalWidth
   let labelHeight = 0

@@ -155,14 +155,14 @@
                 </li>
                 <li class="sub-menu-li"
                 :style="{ opacity: getdisableStyle('incDecspacing') ? 0.5 : 1 }"
-                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Left', 10)"
+                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Left', gridSize)"
                 >
                   <span></span>
                   <span><u>I</u>ncrease</span>
                 </li>
                 <li class="sub-menu-li"
                 :style="{ opacity: getdisableStyle('incDecspacing') ? 0.5 : 1 }"
-                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Left', -10)"
+                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Left', -gridSize)"
                 >
                   <span></span>
                   <span><u>D</u>ecrease</span>
@@ -188,14 +188,14 @@
                 </li>
                 <li class="sub-menu-li"
                 :style="{ opacity: getdisableStyle('incDecspacing') ? 0.5 : 1 }"
-                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Top', 10)"
+                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Top', gridSize)"
                 >
                   <span></span>
                   <span><u>I</u>ncrease</span>
                 </li>
                 <li class="sub-menu-li"
                 :style="{ opacity: getdisableStyle('incDecspacing') ? 0.5 : 1 }"
-                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Top', -10)"
+                @click="getdisableStyle('incDecspacing') ? '' : incDecspacing('Top', -gridSize)"
                 >
                   <span></span>
                   <span><u>D</u>ecrease</span>
@@ -391,6 +391,7 @@ export default class Header extends FDCommonMethod {
   ) => void;
   propControlData = {};
   userFormId = 'ID_USERFORM1';
+  gridSize: number = 9
   insertUserForm () {
     this.propControlData = this.userformData
     const userform = new ControlPropertyData()
@@ -946,6 +947,10 @@ export default class Header extends FDCommonMethod {
       }
     }, 100)
   }
+  convertToGridSize (val: number) {
+    const gridSize = 9
+    return Math.round(val / gridSize) * gridSize
+  }
   sizeToGrid () {
     let divstyle: Array<IGroupStyle> = []
     const usrFrmData = this.userformData[this.userFormId]
@@ -956,22 +961,22 @@ export default class Header extends FDCommonMethod {
         const controlprop = usrFrmData[ctrlSel[index]].properties
         this.updateControlProperty(
           'Left',
-          Math.trunc(controlprop.Left!),
+          this.convertToGridSize(controlprop.Left!),
           ctrlSel[index]
         )
         this.updateControlProperty(
           'Top',
-          Math.trunc(controlprop.Top!),
+          this.convertToGridSize(controlprop.Top!),
           ctrlSel[index]
         )
         this.updateControlProperty(
           'Width',
-          Math.trunc(controlprop.Width!),
+          this.convertToGridSize(controlprop.Width!),
           ctrlSel[index]
         )
         this.updateControlProperty(
           'Height',
-          Math.trunc(controlprop.Height!),
+          this.convertToGridSize(controlprop.Height!),
           ctrlSel[index]
         )
       } else {
@@ -1151,7 +1156,7 @@ export default class Header extends FDCommonMethod {
         if (ctrlProp.GroupID === '') {
           propValue = propValue + value
           incDecValue = ctrlProp.Left! - propValue
-          this.updateControlProperty(type, Math.round(incDecValue / 10) * 10, leftArray[index])
+          this.updateControlProperty(type, this.convertToGridSize(incDecValue), leftArray[index])
         } else {
           if (ctrlProp.GroupID !== '') {
             controlPropIndex = divstyle.findIndex((val) => val.groupName === ctrlProp.GroupID)
@@ -1161,7 +1166,7 @@ export default class Header extends FDCommonMethod {
             EventBus.$emit(
               'updasteGroupSize',
               type,
-              Math.round(incDecValue / 10) * 10,
+              this.convertToGridSize(incDecValue),
               controlPropIndex
             )
           }
@@ -1170,7 +1175,7 @@ export default class Header extends FDCommonMethod {
         if (ctrlProp.GroupID === '') {
           propValue = propValue + value
           incDecValue = ctrlProp.Top! - propValue
-          this.updateControlProperty(type, Math.round(incDecValue / 10) * 10, leftArray[index])
+          this.updateControlProperty(type, this.convertToGridSize(incDecValue), leftArray[index])
         } else {
           if (ctrlProp.GroupID !== '') {
             controlPropIndex = divstyle.findIndex((val) => val.groupName === ctrlProp.GroupID)
@@ -1180,7 +1185,7 @@ export default class Header extends FDCommonMethod {
             EventBus.$emit(
               'updasteGroupSize',
               type,
-              Math.round(incDecValue / 10) * 10,
+              this.convertToGridSize(incDecValue),
               controlPropIndex
             )
           }
@@ -1196,7 +1201,7 @@ export default class Header extends FDCommonMethod {
         if (ctrlProp.GroupID === '') {
           propValue = propValue + value
           incDecValue = ctrlProp.Left! + propValue
-          this.updateControlProperty(type, Math.round(incDecValue / 10) * 10, rightArray[index])
+          this.updateControlProperty(type, this.convertToGridSize(incDecValue), rightArray[index])
         } else {
           if (ctrlProp.GroupID !== '') {
             controlPropIndex = divstyle.findIndex((val) => val.groupName === ctrlProp.GroupID)
@@ -1205,7 +1210,7 @@ export default class Header extends FDCommonMethod {
             EventBus.$emit(
               'updasteGroupSize',
               type,
-              Math.round(incDecValue / 10) * 10,
+              this.convertToGridSize(incDecValue),
               controlPropIndex
             )
           }
@@ -1215,7 +1220,7 @@ export default class Header extends FDCommonMethod {
           let incDecValue = 0
           propValue = propValue + value
           incDecValue = ctrlProp.Top! + propValue
-          this.updateControlProperty(type, Math.round(incDecValue / 10) * 10, rightArray[index])
+          this.updateControlProperty(type, this.convertToGridSize(incDecValue), rightArray[index])
         } else {
           if (ctrlProp.GroupID !== '') {
             controlPropIndex = divstyle.findIndex((val) => val.groupName === ctrlProp.GroupID)
@@ -1225,7 +1230,7 @@ export default class Header extends FDCommonMethod {
             EventBus.$emit(
               'updasteGroupSize',
               type,
-              Math.round(incDecValue / 10) * 10,
+              this.convertToGridSize(incDecValue),
               controlPropIndex
             )
           }

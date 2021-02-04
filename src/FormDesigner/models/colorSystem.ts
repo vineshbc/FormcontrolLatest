@@ -31,7 +31,7 @@ export const colorSystem = [
   },
   {
     name: '&H80000006&',
-    value: 'rgba(128, 127, 127, 0.8)',
+    value: 'rgba(128, 127, 127, 1.8)',
     displayName: 'Window Frame'
   },
   {
